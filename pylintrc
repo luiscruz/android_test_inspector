@@ -1,0 +1,11 @@
+[MASTER]
+ignore=setup.py,docs/conf.py,physalia/third_party/monsoon.py
+
+extension-pkg-whitelist=numpy
+
+[MESSAGES CONTROL]
+disable=locally-disabled,fixme
+
+[TYPECHECK]
+ignored-modules = numpy
+ignored-classes = numpy
