@@ -1,0 +1,73 @@
+"""Matchers to find test suite usage in Android projects."""
+
+import os
+import fnmatch
+import re
+import abc
+
+class Inspector(object):
+    """Abstract class to store knowledge to assess whether a project uses a test suite."""
+
+    __metaclass__ = abc.ABCMeta
+    
+    @abc.abstractmethod
+    def check(self, root_dir):
+        return
+
+class InspectorRegex(Inspector):
+    """Inspector using regex expression for files and content."""
+    # pylint: disable=too-few-public-methods
+    def __init__(self, files_pattern, framework_pattern):
+        self.files_pattern = files_pattern
+        self.framework_pattern = framework_pattern
+
+    def check(self, root_dir):
+        """Check whether given project uses this test suite."""
+        for dirpath, _, files in os.walk(root_dir):
+            for file in fnmatch.filter(files, self.files_pattern):
+                with open(os.path.join(dirpath, file), 'r') as file_opened:
+                    content_as_string = file_opened.read()
+                    match = re.search(self.framework_pattern, content_as_string)
+                    if match:
+                        return True
+        return False
+
+class InspectorComposer(Inspector):
+    def __init__(self, *inspectors):
+        self.inspectors = inspectors
+
+    def check(self, root_dir):
+        """Check whether given project uses this test suite."""
+        return any(inspector.check(root_dir) for inspector in self.inspectors)
+
+inspector_androidviewclient = InspectorComposer(
+    InspectorRegex("requirements.txt", "androidviewclient"),
+    InspectorRegex("*.py", "com.dtmilano.android.viewclient"),
+)
+inspector_appium = InspectorComposer(
+    InspectorRegex("requirements.txt", "Appium-Python-Client"),
+    InspectorRegex("*.py", "appium"),
+    InspectorRegex("appium.txt", ""),
+    InspectorRegex("Gemfile", "appium"),
+    InspectorRegex("pom.xml", "io.appium"),
+    InspectorRegex("*.java", "io.appium"),
+)
+inspector_calabash = InspectorComposer(
+    InspectorRegex("Gemfile", "calabash"),
+)
+inspector_espresso = InspectorRegex("*gradle*", "espressoVersion|com.android.support.test.espresso")
+inspector_monkeyrunner = InspectorRegex("*.py", "MonkeyRunner|MonkeyDevice")
+inspector_pythonuiautomator = InspectorRegex("*.py", "uiautomator")
+inspector_robotium = InspectorRegex("*gradle*", "com.jayway.android.robotium")
+inspector_uiautomator = InspectorRegex("*gradle*", "uiautomatorVersion|com.android.support.test.uiautomator")
+
+inspectors = {
+    "androidviewclient": inspector_androidviewclient,
+    "appium": inspector_appium,
+    "calabash": inspector_calabash,
+    "espresso": inspector_espresso,
+    "monkeyrunner": inspector_monkeyrunner,
+    "pythonuiautomator": inspector_pythonuiautomator,
+    "robotium": inspector_robotium,
+    "uiautomator": inspector_uiautomator,
+}
