@@ -5,18 +5,21 @@ import fnmatch
 import re
 import abc
 
+# pylint: disable=too-few-public-methods
+# pylint: disable=invalid-name
+
 class Inspector(object):
     """Abstract class to store knowledge to assess whether a project uses a test suite."""
 
     __metaclass__ = abc.ABCMeta
-    
+
     @abc.abstractmethod
     def check(self, root_dir):
+        """Abstract method to check whether given project uses this test suite."""
         return
 
 class InspectorRegex(Inspector):
     """Inspector using regex expression for files and content."""
-    # pylint: disable=too-few-public-methods
     def __init__(self, files_pattern, framework_pattern):
         self.files_pattern = files_pattern
         self.framework_pattern = framework_pattern
@@ -24,8 +27,8 @@ class InspectorRegex(Inspector):
     def check(self, root_dir):
         """Check whether given project uses this test suite."""
         for dirpath, _, files in os.walk(root_dir):
-            for file in fnmatch.filter(files, self.files_pattern):
-                with open(os.path.join(dirpath, file), 'r') as file_opened:
+            for file_matched in fnmatch.filter(files, self.files_pattern):
+                with open(os.path.join(dirpath, file_matched), 'r') as file_opened:
                     content_as_string = file_opened.read()
                     match = re.search(self.framework_pattern, content_as_string)
                     if match:
@@ -33,6 +36,7 @@ class InspectorRegex(Inspector):
         return False
 
 class InspectorComposer(Inspector):
+    """Inspector to combine multiple inspectors."""
     def __init__(self, *inspectors):
         self.inspectors = inspectors
 
@@ -55,13 +59,19 @@ inspector_appium = InspectorComposer(
 inspector_calabash = InspectorComposer(
     InspectorRegex("Gemfile", "calabash"),
 )
-inspector_espresso = InspectorRegex("*gradle*", "espressoVersion|com.android.support.test.espresso")
+inspector_espresso = InspectorRegex(
+    "*gradle*",
+    "espressoVersion|com.android.support.test.espresso"
+)
 inspector_monkeyrunner = InspectorRegex("*.py", "MonkeyRunner|MonkeyDevice")
 inspector_pythonuiautomator = InspectorRegex("*.py", "uiautomator")
 inspector_robotium = InspectorRegex("*gradle*", "com.jayway.android.robotium")
-inspector_uiautomator = InspectorRegex("*gradle*", "uiautomatorVersion|com.android.support.test.uiautomator")
+inspector_uiautomator = InspectorRegex(
+    "*gradle*",
+    "uiautomatorVersion|com.android.support.test.uiautomator"
+)
 
-inspectors = {
+INSPECTORS = {
     "androidviewclient": inspector_androidviewclient,
     "appium": inspector_appium,
     "calabash": inspector_calabash,
