@@ -1,2 +1,4 @@
 click
 gitpython
+requests
+pygithub3
