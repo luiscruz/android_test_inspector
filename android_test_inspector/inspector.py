@@ -54,7 +54,7 @@ inspector_appium = InspectorComposer(
     InspectorRegex("appium.txt", ""),
     InspectorRegex("Gemfile", "appium"),
     InspectorRegex("pom.xml", "io.appium"),
-    InspectorRegex("*.java", "io.appium"),
+    InspectorRegex("*gradle*", "io.appium"),
 )
 inspector_calabash = InspectorComposer(
     InspectorRegex("Gemfile", "calabash"),
@@ -70,6 +70,16 @@ inspector_uiautomator = InspectorRegex(
     "*gradle*",
     "uiautomatorVersion|com.android.support.test.uiautomator"
 )
+inspector_projectquantum = InspectorRegex("pom.xml", "com.quantum")
+inspector_qmetry = InspectorRegex("*.xml", "com.qmetry")
+# Cloud testing services
+inspector_saucelabs = InspectorComposer(
+    InspectorRegex("*.py", "ondemand.saucelabs.com")
+    InspectorRegex("*.java", "ondemand.saucelabs.com")
+    InspectorRegex("*.kt", "ondemand.saucelabs.com")
+    InspectorRegex("*.js", "ondemand.saucelabs.com")
+    InspectorRegex("*", "SAUCE_USERNAME")
+)
 
 INSPECTORS = {
     "androidviewclient": inspector_androidviewclient,
@@ -80,4 +90,8 @@ INSPECTORS = {
     "pythonuiautomator": inspector_pythonuiautomator,
     "robotium": inspector_robotium,
     "uiautomator": inspector_uiautomator,
+    "projectquantum": inspector_projectquantum,
+    "qmetry": inspector_qmetry,
+    # Cloud testing services
+    "saucelabs": inspector_saucelabs,
 }
