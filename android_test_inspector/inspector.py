@@ -80,6 +80,17 @@ inspector_saucelabs = InspectorComposer(
     InspectorRegex("*.js", "ondemand.saucelabs.com")
     InspectorRegex("*", "SAUCE_USERNAME")
 )
+inspector_firebase = InspectorRegex("*gradle*", "com.google.firebase")
+inspector_perfecto = InspectorComposer(
+    InspectorRegex("*.java", ".perfectomobile.com"),
+    InspectorRegex("*.kt", ".perfectomobile.com"),
+)
+inspector_bitbar = InspectorComposer(
+    InspectorRegex("*.py", "TESTDROID|testdroid_utils|testdroid.com"),
+    InspectorRegex("*.rb", "TESTDROID|testdroid"),
+    InspectorRegex("pom.xml", "com.testdroid"),
+)
+
 
 INSPECTORS = {
     "androidviewclient": inspector_androidviewclient,
@@ -94,4 +105,7 @@ INSPECTORS = {
     "qmetry": inspector_qmetry,
     # Cloud testing services
     "saucelabs": inspector_saucelabs,
+    "firebase": inspector_firebase,
+    "perfecto": inspector_perfecto,
+    "bitbar": inspector_bitbar,
 }
