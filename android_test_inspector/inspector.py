@@ -74,11 +74,11 @@ inspector_projectquantum = InspectorRegex("pom.xml", "com.quantum")
 inspector_qmetry = InspectorRegex("*.xml", "com.qmetry")
 # Cloud testing services
 inspector_saucelabs = InspectorComposer(
-    InspectorRegex("*.py", "ondemand.saucelabs.com")
-    InspectorRegex("*.java", "ondemand.saucelabs.com")
-    InspectorRegex("*.kt", "ondemand.saucelabs.com")
-    InspectorRegex("*.js", "ondemand.saucelabs.com")
-    InspectorRegex("*", "SAUCE_USERNAME")
+    InspectorRegex("*.py", "ondemand.saucelabs.com"),
+    InspectorRegex("*.java", "ondemand.saucelabs.com"),
+    InspectorRegex("*.kt", "ondemand.saucelabs.com"),
+    InspectorRegex("*.js", "ondemand.saucelabs.com"),
+    InspectorRegex("*", "SAUCE_USERNAME"),
 )
 inspector_firebase = InspectorRegex("*gradle*", "com.google.firebase")
 inspector_perfecto = InspectorComposer(

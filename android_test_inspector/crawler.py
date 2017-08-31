@@ -1,14 +1,13 @@
 """Logic to analyze a single project"""
 
-from git import Repo
-import click
 import xml.etree.cElementTree as ET
 import codecs
-import requests
-import os
 import json
-from pygithub3 import Github, exceptions as gh_exceptions
 from urlparse import urlparse
+import requests
+import click
+from git import Repo
+from pygithub3 import Github, exceptions as gh_exceptions
 from android_test_inspector.inspector import INSPECTORS
 
 def _gitclone(repo_link, clone_dir):
@@ -49,8 +48,8 @@ def download_fdroid(filename):
         with click.progressbar(
             response.iter_content(),
             label='Downloading F-Droid metadata'
-        ) as bar:
-            for data in bar:
+        ) as progressbar:
+            for data in progressbar:
                 handle.write(data)
 
 _github_api = None
@@ -67,15 +66,15 @@ def get_github_api():
     return _github_api
 
 def get_github_info(username, project):
-    gh = get_github_api()
+    github = get_github_api()
     try:
-        repo = gh.repos.get(user=username, repo=project)
-        contributors = gh.repos.list_contributors(
+        repo = github.repos.get(user=username, repo=project)
+        contributors = github.repos.list_contributors(
             user=username,
             repo=project
         ).all()
         n_contributors = len(contributors)
-        n_commits = sum(map(lambda x: x.contributions, contributors))
+        n_commits = sum(x.contributions for x in contributors)
         return {
             "forks": repo.forks_count,
             "stars": repo.stargazers_count,
@@ -85,12 +84,12 @@ def get_github_info(username, project):
         }
     except gh_exceptions.NotFound:
         click.secho(
-            'Failed to collect data about {}/{}.'.format(username,project),
+            'Failed to collect data about {}/{}.'.format(username, project),
             fg='yellow', err=True
         )
         return {}
 
-def parse_fdroid(file_in, file_out, limit=None, no_cache=False):
+def parse_fdroid(file_in, file_out, limit=None):
     """Get repos of Android apps available at F-Droid."""
     lines = list()
     non_github_repos = 0 #keep track of non github repos
@@ -134,8 +133,8 @@ def parse_fdroid(file_in, file_out, limit=None, no_cache=False):
     )
     print "Saving %d repositories to \"%s\"." % (len(lines), file_out)
     lines.sort()
-    with codecs.open(file_out, "w") as fo:
-        fo.write("last_updated,github_link,user,project_name,app_id,category,stars,contributors,commits,forks,created_at\n")
-        fo.writelines("\n".join([",".join(line) for line in lines[::-1]]))
-        fo.write("\n")
-
+    with codecs.open(file_out, "w") as file_opened:
+        file_opened.write("last_updated,github_link,user,project_name,app_id,category,"
+                          "stars,contributors,commits,forks,created_at\n")
+        file_opened.writelines("\n".join([",".join(line) for line in lines[::-1]]))
+        file_opened.write("\n")

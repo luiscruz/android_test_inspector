@@ -1,6 +1,6 @@
 """Script that puts everything together and runs experiments."""
 import os
-from android_test_inspector.crawler import analyze_project,download_fdroid,parse_fdroid
+from android_test_inspector.crawler import download_fdroid, parse_fdroid
 
 FDROID_DATA_FILENAME = "./fdroid.xml"
 PROJECTS_DATA_FILENAME = "./fdroid_repos.csv"
