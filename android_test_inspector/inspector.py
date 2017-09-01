@@ -8,6 +8,40 @@ import abc
 # pylint: disable=too-few-public-methods
 # pylint: disable=invalid-name
 
+_FILE_IGNORE = [
+    '*.jar',
+    '*.aar',
+    '*.zip',
+    'index',
+    '*.idx',
+    '*.pack',
+    '*.png',
+    '*.jpg',
+    '*.bmp',
+    '*.odg',
+    '*.xcf',
+    '*.apk',
+    '*.mp3',
+    '*.mka',
+    '*.ogg',
+    '*.opus',
+    '*.wav',
+    '*.pdf',
+    '*.ttf',
+    '*.svgz',
+    '*.woff',
+    '*.dat',
+    '*.o',
+    '*.db',
+    '*.odp',
+    '*.psd',
+    '*.bin',
+    '.DS_Store'.lower(),
+    'ChangeLog'.lower(),
+    '*.jks',
+    '*.webp',
+]
+
 class Inspector(object):
     """Abstract class to store knowledge to assess whether a project uses a test suite."""
 
@@ -28,11 +62,17 @@ class InspectorRegex(Inspector):
         """Check whether given project uses this test suite."""
         for dirpath, _, files in os.walk(root_dir):
             for file_matched in fnmatch.filter(files, self.files_pattern):
-                with open(os.path.join(dirpath, file_matched), 'r') as file_opened:
-                    content_as_string = file_opened.read()
-                    match = re.search(self.framework_pattern, content_as_string)
-                    if match:
-                        return True
+                if any([fnmatch.fnmatch(file_matched.lower(), pattern) for pattern in _FILE_IGNORE]):
+                    continue
+                with open(os.path.join(dirpath, file_matched), 'rt') as file_opened:
+                    try:
+                        content_as_string = file_opened.read()
+                        match = re.search(self.framework_pattern, content_as_string)
+                        if match:
+                            return True
+                    except UnicodeDecodeError:
+                        print("Error reading file {}".format(file_matched))
+                        continue
         return False
 
 class InspectorComposer(Inspector):

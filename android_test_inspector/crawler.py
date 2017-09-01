@@ -3,11 +3,12 @@
 import xml.etree.cElementTree as ET
 import codecs
 import json
-from urlparse import urlparse
+from urllib.parse import urlparse
 import requests
 import click
 from git import Repo
-from pygithub3 import Github, exceptions as gh_exceptions
+from github import Github
+from github.GithubException import GithubException
 from android_test_inspector.inspector import INSPECTORS
 
 def _gitclone(repo_link, clone_dir):
@@ -60,21 +61,16 @@ def get_github_api():
         with open('./config.json') as config_file:
             config = json.load(config_file)
         _github_api = Github(
-            user=config.get('github_username'),
-            token=config.get('github_token')
+            login_or_token=config.get('github_token')
         )
     return _github_api
 
 def get_github_info(username, project):
     github = get_github_api()
     try:
-        repo = github.repos.get(user=username, repo=project)
-        contributors = github.repos.list_contributors(
-            user=username,
-            repo=project
-        ).all()
-        n_contributors = len(contributors)
-        n_commits = sum(x.contributions for x in contributors)
+        repo = github.get_user(username).get_repo(project)
+        n_contributors = len(repo.get_contributors())
+        n_commits = len(repo.get_commits())
         return {
             "forks": repo.forks_count,
             "stars": repo.stargazers_count,
@@ -82,7 +78,7 @@ def get_github_info(username, project):
             "contributors": n_contributors,
             "commits": n_commits,
         }
-    except gh_exceptions.NotFound:
+    except GithubException:
         click.secho(
             'Failed to collect data about {}/{}.'.format(username, project),
             fg='yellow', err=True
@@ -127,11 +123,11 @@ def parse_fdroid(file_in, file_out, limit=None):
                 non_github_repos += 1
         if limit and len(lines) >= limit:
             break
-    print "Found {github_repos} github repos from a total of {total_repos}".format(
+    print("Found {github_repos} github repos from a total of {total_repos}".format(
         github_repos=len(lines),
         total_repos=len(lines)+non_github_repos
-    )
-    print "Saving %d repositories to \"%s\"." % (len(lines), file_out)
+    ))
+    print("Saving %d repositories to \"%s\"." % (len(lines), file_out))
     lines.sort()
     with codecs.open(file_out, "w") as file_opened:
         file_opened.write("last_updated,github_link,user,project_name,app_id,category,"

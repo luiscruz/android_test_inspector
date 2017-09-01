@@ -100,5 +100,7 @@ ENV/
 # mypy
 .mypy_cache/
 
+.DS_Store
+
 #sensitive info
 /config.json
