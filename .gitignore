@@ -104,3 +104,5 @@ ENV/
 
 #sensitive info
 /config.json
+#experimental tmp data
+/tmp

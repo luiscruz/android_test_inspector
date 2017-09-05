@@ -64,15 +64,22 @@ class InspectorRegex(Inspector):
             for file_matched in fnmatch.filter(files, self.files_pattern):
                 if any([fnmatch.fnmatch(file_matched.lower(), pattern) for pattern in _FILE_IGNORE]):
                     continue
-                with open(os.path.join(dirpath, file_matched), 'rt') as file_opened:
-                    try:
-                        content_as_string = file_opened.read()
-                        match = re.search(self.framework_pattern, content_as_string)
-                        if match:
-                            return True
-                    except UnicodeDecodeError:
-                        print("Error reading file {}".format(file_matched))
-                        continue
+                try:
+                    with open(os.path.join(dirpath, file_matched), 'rt') as file_opened:
+                        try:
+                            content_as_string = file_opened.read()
+                            match = re.search(self.framework_pattern, content_as_string)
+                            if match:
+                                return True
+                        except UnicodeDecodeError:
+                            print("Error reading file {}".format(file_matched))
+                            continue
+                except FileNotFoundError:
+                    print("File not found (skipping): {}".format(file_matched))
+                    continue
+                except:
+                    print("Unknown error in file {}".format(file_matched))
+                    continue
         return False
 
 class InspectorComposer(Inspector):
@@ -84,6 +91,7 @@ class InspectorComposer(Inspector):
         """Check whether given project uses this test suite."""
         return any(inspector.check(root_dir) for inspector in self.inspectors)
 
+#UI Automation frameworks
 inspector_androidviewclient = InspectorComposer(
     InspectorRegex("requirements.txt", "androidviewclient"),
     InspectorRegex("*.py", "com.dtmilano.android.viewclient"),
@@ -130,7 +138,11 @@ inspector_bitbar = InspectorComposer(
     InspectorRegex("*.rb", "TESTDROID|testdroid"),
     InspectorRegex("pom.xml", "com.testdroid"),
 )
-
+# Unit test frameworks
+inspector_junit = InspectorRegex("*gradle*", "junit:junit")
+inspector_androidjunitrunner = InspectorRegex("*gradle*", "android.support.test.runner.AndroidJUnitRunner")
+inspector_roboelectric = InspectorRegex("*gradle*", "org.robolectric:robolectric")
+inspector_robospock = InspectorRegex("*gradle*", "org.robospock:robospock")
 
 INSPECTORS = {
     "androidviewclient": inspector_androidviewclient,
@@ -148,4 +160,9 @@ INSPECTORS = {
     "firebase": inspector_firebase,
     "perfecto": inspector_perfecto,
     "bitbar": inspector_bitbar,
+    #unit test frameworks
+    "junit": inspector_junit,
+    "androidjunitrunner": inspector_androidjunitrunner,
+    "roboelectric": inspector_roboelectric,
+    "robospock": inspector_robospock,
 }

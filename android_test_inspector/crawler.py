@@ -69,8 +69,8 @@ def get_github_info(username, project):
     github = get_github_api()
     try:
         repo = github.get_user(username).get_repo(project)
-        n_contributors = len(repo.get_contributors())
-        n_commits = len(repo.get_commits())
+        n_contributors = len(list(repo.get_contributors()))
+        n_commits = len(list(repo.get_commits()))
         return {
             "forks": repo.forks_count,
             "stars": repo.stargazers_count,

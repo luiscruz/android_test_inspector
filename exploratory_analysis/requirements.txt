@@ -1,0 +1,4 @@
+jupyter
+matplotlib
+pandas
+pandas-profiling
