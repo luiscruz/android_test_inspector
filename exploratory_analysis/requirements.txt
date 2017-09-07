@@ -2,3 +2,6 @@ jupyter
 matplotlib
 pandas
 pandas-profiling
+scipy
+numpy
+statsmodels
