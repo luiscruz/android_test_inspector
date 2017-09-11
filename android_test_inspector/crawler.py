@@ -4,6 +4,7 @@ import xml.etree.cElementTree as ET
 import codecs
 import json
 from urllib.parse import urlparse
+import urllib.request, urllib.error
 import requests
 import click
 from git import Repo
@@ -134,3 +135,38 @@ def parse_fdroid(file_in, file_out, limit=None):
                           "stars,contributors,commits,forks,created_at\n")
         file_opened.writelines("\n".join([",".join(line) for line in lines[::-1]]))
         file_opened.write("\n")
+
+def get_coverage_from_coveralls(user, repo):
+    """Get coverage from a github project in coveralls."""
+    url = "https://coveralls.io/github/{}/{}.json".format(user, repo)
+    try:
+        with urllib.request.urlopen(url) as url_open:
+            data = json.loads(url_open.read().decode())
+            return data.get("covered_percent")
+    except urllib.error.HTTPError:
+        print("Coverage not found for {}/{}".format(user,repo))
+    except:
+        pass
+    return None
+
+def get_coverage_from_codecov(user, repo):
+    """Get coverage from a github project in Codecov."""
+    url = "https://codecov.io/api/gh/{}/{}".format(user, repo)
+    try:
+        with urllib.request.urlopen(url) as url_open:
+            data = json.loads(url_open.read().decode())
+            return data.get("commit").get("totals").get("c")
+    except urllib.error.HTTPError:
+        print("Codecov coverage not found for {}/{}".format(user,repo))
+    except:
+        print("Weird error with {}/{}".format(user,repo))
+    return None
+    
+
+if __name__ == "__main__":
+    coverage = get_coverage_from_coveralls("lemurheavy","coveralls-ruby")
+    print(coverage)
+    coverage = get_coverage_from_codecov("fossasia","open-event-webapp")
+    print(coverage)
+
+    

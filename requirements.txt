@@ -2,4 +2,5 @@ click
 gitpython
 requests
 pygithub
-
+pandas_profiling
+google_play_reader
