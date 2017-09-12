@@ -143,6 +143,8 @@ inspector_junit = InspectorRegex("*gradle*", "junit:junit")
 inspector_androidjunitrunner = InspectorRegex("*gradle*", "android.support.test.runner.AndroidJUnitRunner")
 inspector_roboelectric = InspectorRegex("*gradle*", "org.robolectric:robolectric")
 inspector_robospock = InspectorRegex("*gradle*", "org.robospock:robospock")
+inspector_travis = InspectorRegex("travis.yml", "")
+inspector_circleci = InspectorRegex("circle.yml", "")
 
 INSPECTORS = {
     "androidviewclient": inspector_androidviewclient,
@@ -160,6 +162,8 @@ INSPECTORS = {
     "firebase": inspector_firebase,
     "perfecto": inspector_perfecto,
     "bitbar": inspector_bitbar,
+    "travis": inspector_travis,
+    'circleci': inspector_circleci,
     #unit test frameworks
     "junit": inspector_junit,
     "androidjunitrunner": inspector_androidjunitrunner,

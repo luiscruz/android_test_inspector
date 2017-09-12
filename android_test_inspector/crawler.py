@@ -155,18 +155,23 @@ def get_coverage_from_codecov(user, repo):
     try:
         with urllib.request.urlopen(url) as url_open:
             data = json.loads(url_open.read().decode())
-            return data.get("commit").get("totals").get("c")
+            commit = data.get("commit")
+            if commit:
+                return commit.get("totals").get("c")
+            else:
+                print("Codecov coverage not found for {}/{}".format(user,repo))
     except urllib.error.HTTPError:
         print("Codecov coverage not found for {}/{}".format(user,repo))
     except:
         print("Weird error with {}/{}".format(user,repo))
-    return None
-    
+    return None    
 
 if __name__ == "__main__":
     coverage = get_coverage_from_coveralls("lemurheavy","coveralls-ruby")
     print(coverage)
     coverage = get_coverage_from_codecov("fossasia","open-event-webapp")
+    print(coverage)
+    coverage = get_coverage_from_codecov("SimpleMobileTools","Simple-Gallery")
     print(coverage)
 
     

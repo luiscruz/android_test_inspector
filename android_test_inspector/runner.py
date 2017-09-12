@@ -4,7 +4,8 @@ from google_play_reader.models import AppDatabase
 import os
 import csv
 
-from android_test_inspector.crawler import download_fdroid, parse_fdroid, analyze_project, get_coverage_from_coveralls, INSPECTORS
+from android_test_inspector.crawler import download_fdroid, parse_fdroid, analyze_project, INSPECTORS
+from android_test_inspector.crawler import get_coverage_from_coveralls, get_coverage_from_codecov
 
 FDROID_DATA_FILENAME = "./fdroid.xml"
 PROJECTS_DATA_CSV = "./fdroid_repos.csv"
@@ -48,12 +49,12 @@ if __name__ == "__main__":
     if not os.path.isfile(COVERAGE_RESULTS_CSV) or os.path.getctime(COVERAGE_RESULTS_CSV) < os.path.getctime(TOOLS_RESULTS_CSV):
         with open(TOOLS_RESULTS_CSV, 'r') as csv_input:
             csv_reader = csv.DictReader(csv_input)
-            fieldnames = csv_reader.fieldnames+['coveralls']
+            fieldnames = csv_reader.fieldnames+['coveralls','codecov']
             with open(COVERAGE_RESULTS_CSV, 'w') as csv_output:
                 csv_writer = csv.DictWriter(csv_output, fieldnames=fieldnames)
                 csv_writer.writeheader()
                 for row in csv_reader:
                     row['coveralls'] = get_coverage_from_coveralls(row['user'], row['project_name'])
+                    row['codecov'] = get_coverage_from_codecov(row['user'], row['project_name'])
                     csv_writer.writerow(row)
-            
-            
+
