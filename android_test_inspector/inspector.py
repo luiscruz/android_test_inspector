@@ -173,7 +173,7 @@ INSPECTORS = {
     # go cd: does not store conf files in the repo
     # bamboo: does not store conf files in the repo
     # gitlab: requires gitlab project
-    codefresh: inspector_codefresh
+    'codefresh': inspector_codefresh
     #unit test frameworks
     "junit": inspector_junit,
     "androidjunitrunner": inspector_androidjunitrunner,
