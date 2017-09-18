@@ -143,10 +143,10 @@ inspector_junit = InspectorRegex("*gradle*", "junit:junit")
 inspector_androidjunitrunner = InspectorRegex("*gradle*", "android.support.test.runner.AndroidJUnitRunner")
 inspector_roboelectric = InspectorRegex("*gradle*", "org.robolectric:robolectric")
 inspector_robospock = InspectorRegex("*gradle*", "org.robospock:robospock")
-inspector_travis = InspectorRegex("travis.yml", "")
-inspector_circleci = InspectorRegex("circle.yml", "")
-inspector_codeship = InspectorRegex("codeship*.yml", "")
-inspector_codefresh = InspectorRegex("codefresh.yml", "")
+inspector_travis = InspectorRegex("*travis.yml", "")
+inspector_circleci = InspectorRegex("*circle.yml", "")
+inspector_codeship = InspectorRegex("*codeship*.yml", "")
+inspector_codefresh = InspectorRegex("*codefresh.yml", "")
 
 INSPECTORS = {
     "androidviewclient": inspector_androidviewclient,
@@ -173,7 +173,7 @@ INSPECTORS = {
     # go cd: does not store conf files in the repo
     # bamboo: does not store conf files in the repo
     # gitlab: requires gitlab project
-    'codefresh': inspector_codefresh
+    'codefresh': inspector_codefresh,
     #unit test frameworks
     "junit": inspector_junit,
     "androidjunitrunner": inspector_androidjunitrunner,
