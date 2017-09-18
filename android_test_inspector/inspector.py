@@ -145,6 +145,8 @@ inspector_roboelectric = InspectorRegex("*gradle*", "org.robolectric:robolectric
 inspector_robospock = InspectorRegex("*gradle*", "org.robospock:robospock")
 inspector_travis = InspectorRegex("travis.yml", "")
 inspector_circleci = InspectorRegex("circle.yml", "")
+inspector_codeship = InspectorRegex("codeship*.yml", "")
+inspector_codefresh = InspectorRegex("codefresh.yml", "")
 
 INSPECTORS = {
     "androidviewclient": inspector_androidviewclient,
@@ -162,8 +164,16 @@ INSPECTORS = {
     "firebase": inspector_firebase,
     "perfecto": inspector_perfecto,
     "bitbar": inspector_bitbar,
+    # CI (https://www.code-maze.com/top-8-continuous-integration-tools/)
     "travis": inspector_travis,
     'circleci': inspector_circleci,
+    'codeship': inspector_codeship,
+    # teamcity: does not store conf files in the repo
+    # jenkins: does not store conf files in the repo
+    # go cd: does not store conf files in the repo
+    # bamboo: does not store conf files in the repo
+    # gitlab: requires gitlab project
+    codefresh: inspector_codefresh
     #unit test frameworks
     "junit": inspector_junit,
     "androidjunitrunner": inspector_androidjunitrunner,
