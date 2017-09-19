@@ -2,6 +2,7 @@
 
 import os
 import csv
+import click
 from google_play_reader.models import AppDatabase
 from friendly_sonar.lint import run_lint
 
@@ -73,7 +74,7 @@ if __name__ == "__main__":
     
     #collect information from SONAR
     
-    fieldnames = ['package', 'issues', 'critical_issues', 'major_issues', 'minor_issues']
+    fieldnames = ['package', 'issues', 'critical_issues', 'major_issues', 'minor_issues', 'files_processed']
     if not os.path.isfile(SONAR_RESULTS_CSV):
         with open(SONAR_RESULTS_CSV, 'w') as csv_output:
             csv_writer = csv.DictWriter(csv_output, fieldnames=fieldnames)
@@ -85,16 +86,19 @@ if __name__ == "__main__":
     with open(TOOLS_RESULTS_CSV, 'r') as csv_file:
         csv_reader = csv.DictReader(csv_file)
         projects = [
-            row['app_id'], "./tmp/{user}_{project_name}".format(**row)
+            (row['app_id'], "./tmp/{user}_{project_name}".format(**row))
             for row in csv_reader
         ]
-    for package, project_path in projects:
-        if package in sonar_processed_packages:
-            print("Skipping {}: already processed.".format(package))
-            continue
-        else:
-            results = run_lint(project_path)
-            with open(SONAR_RESULTS_CSV, 'a') as csv_output:
-                csv_writer = csv.DictWriter(csv_output, fieldnames=fieldnames)
-                results['package'] = package
-                csv_writer.writerow(results)
+    click.secho("Processing Sonar")
+    with click.progressbar(projects) as bar:
+        for package, project_path in bar:
+            if package in sonar_processed_packages:
+                print("Skipping {}: already processed.".format(package))
+                continue
+            else:
+                results = run_lint(project_path)
+                if results:
+                    with open(SONAR_RESULTS_CSV, 'a') as csv_output:
+                        csv_writer = csv.DictWriter(csv_output, fieldnames=fieldnames)
+                        results['package'] = package
+                        csv_writer.writerow(results)
