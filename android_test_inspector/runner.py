@@ -21,24 +21,24 @@ if __name__ == "__main__":
     if not os.path.isfile(FDROID_DATA_FILENAME) or not CACHE_FDROID:
         download_fdroid(FDROID_DATA_FILENAME)
 
-    if not os.path.isfile(PROJECTS_DATA_CSV) or os.path.getctime(PROJECTS_DATA_CSV) < os.path.getctime(FDROID_DATA_FILENAME):
-        parse_fdroid(
-            file_in=FDROID_DATA_FILENAME,
-            file_out=PROJECTS_DATA_CSV,
-        )
-
-    if not os.path.isfile(TOOLS_RESULTS_CSV) or os.path.getmtime(TOOLS_RESULTS_CSV) < os.path.getmtime(PROJECTS_DATA_CSV):
-        with open(PROJECTS_DATA_CSV, 'r') as projects_csvfile:
-            csv_reader = csv.DictReader(projects_csvfile)
-            fieldnames = list(csv_reader.fieldnames) + list(INSPECTORS.keys())
-            with open(TOOLS_RESULTS_CSV, 'w') as results_csvfile:
-                csv_writer = csv.DictWriter(results_csvfile, fieldnames=fieldnames)
-                csv_writer.writeheader()
-                for row in csv_reader:
-                    print(row)
-                    project_results = analyze_project(row['github_link'], "./tmp/{user}_{project_name}".format(**row))
-                    row.update(project_results)
-                    csv_writer.writerow(row)
+    # if not os.path.isfile(PROJECTS_DATA_CSV) or os.path.getctime(PROJECTS_DATA_CSV) < os.path.getctime(FDROID_DATA_FILENAME):
+    #     parse_fdroid(
+    #         file_in=FDROID_DATA_FILENAME,
+    #         file_out=PROJECTS_DATA_CSV,
+    #     )
+    #
+    # if not os.path.isfile(TOOLS_RESULTS_CSV) or os.path.getmtime(TOOLS_RESULTS_CSV) < os.path.getmtime(PROJECTS_DATA_CSV):
+    #     with open(PROJECTS_DATA_CSV, 'r') as projects_csvfile:
+    #         csv_reader = csv.DictReader(projects_csvfile)
+    #         fieldnames = list(csv_reader.fieldnames) + list(INSPECTORS.keys())
+    #         with open(TOOLS_RESULTS_CSV, 'w') as results_csvfile:
+    #             csv_writer = csv.DictWriter(results_csvfile, fieldnames=fieldnames)
+    #             csv_writer.writeheader()
+    #             for row in csv_reader:
+    #                 print(row)
+    #                 project_results = analyze_project(row['github_link'], "./tmp/{user}_{project_name}".format(**row))
+    #                 row.update(project_results)
+    #                 csv_writer.writerow(row)
 
     # # collect information from Google Play
     # if not os.path.isfile(GOOGLEPLAY_CSV) or os.path.getmtime(GOOGLEPLAY_CSV) < os.path.getmtime(TOOLS_RESULTS_CSV):
