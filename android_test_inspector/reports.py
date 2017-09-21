@@ -5,6 +5,7 @@ from os.path import join as path_join
 import click
 import matplotlib.pyplot as plt
 import pandas
+import numpy as np
 
 ui_automation_frameworks = [
     "androidviewclient",
@@ -55,10 +56,14 @@ def reports(results_input, results_output):
         index_col='package'
     )
     df = df.join(df_googleplay, on="app_id")
+    df['tests'] = df[unit_test_frameworks+ui_automation_frameworks+cloud_test_services].any(axis=1)
+
+    
     
     # --- Number of projects by framework --- #
-    columns = unit_test_frameworks+ui_automation_frameworks+cloud_test_services+ci_services
+    columns = ['tests'] + unit_test_frameworks+ui_automation_frameworks+cloud_test_services+ci_services
     colors =  (
+        ['k'] +
         ['c'] * len(unit_test_frameworks) 
         + ['g'] * len(ui_automation_frameworks)
         + ['b'] * len(cloud_test_services)
@@ -79,19 +84,20 @@ def reports(results_input, results_output):
     ax.spines['top'].set_visible(False)
     ax.spines['left'].set_visible(False)
     ax.yaxis.grid(linestyle='--')
+    
 
     def draw_range(ax, xmin, xmax, label):
-        y=350
+        y=400
         ax.annotate('', xy=(xmin, y), xytext=(xmax, y), xycoords='data', textcoords='data',
                     arrowprops={'arrowstyle': '|-|', 'color':'black', 'linewidth': 0.5})
         xcenter = xmin + (xmax-xmin)/2
         ytext = y + ( ax.get_ylim()[1] - ax.get_ylim()[0] ) / 20
         ax.annotate(label, xy=(xcenter,ytext), ha='center', va='center', fontsize=9)
 
-    draw_range(ax, -0.5, 3.5, "Unit testing")
-    draw_range(ax, 3.5, 11.5, "UI automation")
-    draw_range(ax, 11.5, 17.5, "Cloud testing")
-    draw_range(ax, 17.5, 21.5, "CI/CD")
+    draw_range(ax, 0.5, 4.5, "Unit testing")
+    draw_range(ax, 4.5, 12.5, "UI automation")
+    draw_range(ax, 12.5, 18.5, "Cloud testing")
+    draw_range(ax, 18.5, 22.5, "CI/CD")
     
     figure.tight_layout()
     figure.savefig(path_join(results_output, "framework_count.pdf"))
