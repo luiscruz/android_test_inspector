@@ -41,6 +41,10 @@ ci_services = [
     'codefresh',
 ]
 
+color_blind = (
+    "rgb(255,188,121)",
+)
+
 @click.command()
 @click.option('-i','--results_input', default=".", type=click.Path(exists=True))
 @click.option('-o','--results_output', default="./reports", type=click.Path(exists=True))
@@ -63,11 +67,11 @@ def reports(results_input, results_output):
     # --- Number of projects by framework --- #
     columns = ['tests'] + unit_test_frameworks+ui_automation_frameworks+cloud_test_services+ci_services
     colors =  (
-        ['k'] +
-        ['c'] * len(unit_test_frameworks) 
-        + ['g'] * len(ui_automation_frameworks)
-        + ['b'] * len(cloud_test_services)
-        + ['m'] * len(ci_services) 
+        ['C0'] +
+        ['C1'] * len(unit_test_frameworks) 
+        + ['C2'] * len(ui_automation_frameworks)
+        + ['C3'] * len(cloud_test_services)
+        + ['C4'] * len(ci_services) 
     )
 
     sums = df[columns].sum()
