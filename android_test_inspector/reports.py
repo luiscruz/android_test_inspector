@@ -43,9 +43,6 @@ ci_services = [
     'codefresh',
 ]
 
-color_blind = (
-    "rgb(255,188,121)",
-)
 
 @click.command()
 @click.option('-i','--results_input', default=".", type=click.Path(exists=True))
@@ -73,6 +70,14 @@ def reports(results_input, results_output):
     df['time_since_last_update_numeric'] = df['time_since_last_update'].astype('<m8[Y]').astype('int')
     df_old = df[df['age_numeric']>=2]
 
+    colors_dict = {
+        'any': 'C0',
+        'unit_test_frameworks': 'C1',
+        'ui_automation_frameworks': 'C2',
+        'cloud_test_services': 'C3',
+        'ci_services': 'C4',
+    }
+
     # --- Number of projects by framework --- #
     columns = (
         ['tests']
@@ -82,11 +87,11 @@ def reports(results_input, results_output):
         # + ['ci/cd'] + ci_services
     )
     colors =  (
-        ['C0'] +
-        ['C1'] * (len(unit_test_frameworks) + 1)
-        + ['C2'] * (len(ui_automation_frameworks) + 1)
-        + ['C3'] * (len(cloud_test_services) + 1)
-        + ['C4'] * (len(ci_services) + 1)
+        [colors_dict['any']] +
+        [colors_dict['unit_test_frameworks']] * (len(unit_test_frameworks) + 1)
+        + [colors_dict['ui_automation_frameworks']] * (len(ui_automation_frameworks) + 1)
+        + [colors_dict['cloud_test_services']] * (len(cloud_test_services) + 1)
+        + [colors_dict['ci_services']] * (len(ci_services) + 1)
     )
     
     highlights = [
@@ -148,7 +153,7 @@ def reports(results_input, results_output):
     # --- Percentage of Android tests over the age of the apps --- #
     def tests_in_projects_by_time_of_creation(df_projects, frameworks, label=None,
                                               title=None,
-                                              zorder=1,
+                                              zorder=1, color=None,
                                               verbose=False):
         portions = []
         n_projects_with_tests_history = []
@@ -184,11 +189,10 @@ def reports(results_input, results_output):
             ax.set_title(title)
 
     figure, ax = plt.subplots(1,1)
-    tests_in_projects_by_time_of_creation(df, unit_test_frameworks+ui_automation_frameworks+cloud_test_services, zorder=1)
-    tests_in_projects_by_time_of_creation(df, unit_test_frameworks+ui_automation_frameworks+cloud_test_services, label="Any", zorder=2)
-    tests_in_projects_by_time_of_creation(df, unit_test_frameworks, label="Unit tests", zorder=3)
-    tests_in_projects_by_time_of_creation(df, ui_automation_frameworks, label="UI Automation", zorder=4)
-    tests_in_projects_by_time_of_creation(df, cloud_test_services, label="Cloud testing", zorder=5)
+    tests_in_projects_by_time_of_creation(df, unit_test_frameworks+ui_automation_frameworks+cloud_test_services, label="Any", color=colors_dict['any'], zorder=2)
+    tests_in_projects_by_time_of_creation(df, unit_test_frameworks, label="Unit tests", color=colors_dict['unit_test_frameworks'], zorder=3)
+    tests_in_projects_by_time_of_creation(df, ui_automation_frameworks, label="UI Automation", color=colors_dict['ui_automation_frameworks'], zorder=4)
+    tests_in_projects_by_time_of_creation(df, cloud_test_services, label="Cloud testing", color=colors_dict['cloud_test_services'], zorder=5)
     ax.set_xlabel("Years since creation")
     figure.tight_layout()
     figure.savefig(path_join(results_output, "tests_by_age.pdf"))
@@ -197,7 +201,7 @@ def reports(results_input, results_output):
     # --- Percentage of 2+years apps with tests grouped by time since last update --- #
     def tests_in_projects_by_time_of_update(df_projects, frameworks, label=None,
                                               title=None,
-                                              verbose=False):
+                                              verbose=False, zorder=None, color=None):
         portions = []
         n_projects_with_tests_history = []
         total_projects_history = []
@@ -216,8 +220,8 @@ def reports(results_input, results_output):
                 print("Age {}:".format(age))
                 print("{} out of {} projects ({:.1%}).".format(n_projects_with_tests, total_projects, portion))
     
-        plt.plot(range(age_max), portions, label=label)
-        plt.scatter(range(age_max), portions, total_projects_history, marker='o', linewidth='1')
+        plt.plot(range(age_max), portions, label=label, zorder=zorder)
+        plt.scatter(range(age_max), portions, total_projects_history, marker='o', linewidth='1', zorder=zorder)
         ax = plt.gca()
         ax.spines['right'].set_visible(False)
         ax.spines['top'].set_visible(False)
@@ -228,17 +232,16 @@ def reports(results_input, results_output):
         ax.set_ylabel("Percentage of projects")
         ax.yaxis.grid(linestyle='dotted', color='gray')
 
-
         if label:
             legend = ax.legend(loc='upper center', shadow=False)
         if title:
             plt.title(title)
+
     figure, ax = plt.subplots(1,1)
-    tests_in_projects_by_time_of_update(df_old, unit_test_frameworks+ui_automation_frameworks+cloud_test_services)
-    tests_in_projects_by_time_of_update(df_old, unit_test_frameworks+ui_automation_frameworks+cloud_test_services, label="Any")
-    tests_in_projects_by_time_of_update(df_old, unit_test_frameworks, label="Unit tests")
-    tests_in_projects_by_time_of_update(df_old, ui_automation_frameworks, label="UI Automation")
-    tests_in_projects_by_time_of_update(df_old, cloud_test_services, label="Cloud testing")
+    tests_in_projects_by_time_of_update(df_old, unit_test_frameworks+ui_automation_frameworks+cloud_test_services, label="Any", color=colors_dict['any'], zorder=1)
+    tests_in_projects_by_time_of_update(df_old, unit_test_frameworks, label="Unit tests", color=colors_dict['unit_test_frameworks'], zorder=2)
+    tests_in_projects_by_time_of_update(df_old, ui_automation_frameworks, label="UI Automation", color=colors_dict['ui_automation_frameworks'], zorder=3)
+    tests_in_projects_by_time_of_update(df_old, cloud_test_services, label="Cloud testing", color=colors_dict['cloud_test_services'], zorder=4)
     ax.set_xlabel("Years since last update")
     figure.tight_layout()
     figure.savefig(path_join(results_output, "mature_tests_by_update.pdf"))
