@@ -78,12 +78,21 @@ def reports(results_input, results_output):
     ax.bar(range(len(labels)), heights, 0.5, color=colors)
     ax.set_xticklabels(labels, rotation='vertical')
     ax.set_xticks(range(len(labels)))
+    ax.tick_params(direction='out', top='off')
     ax.set_title("Number of projects by test framework")
     ax.set_ylabel("Number of projects")
     ax.spines['right'].set_visible(False)
     ax.spines['top'].set_visible(False)
     ax.spines['left'].set_visible(False)
-    ax.yaxis.grid(linestyle='--')
+    ax.yaxis.grid(linestyle='dotted')
+    
+    ax2 = ax.twinx()
+    ax2.grid(False)
+    ax2.set_ylim(ax.get_ylim())
+    ax2.set_yticklabels(["{:.0%}".format(tick/len(df)) for tick in ax2.get_yticks()])
+    ax2.spines['right'].set_visible(False)
+    ax2.spines['top'].set_visible(False)
+    ax2.spines['left'].set_visible(False)
     
 
     def draw_range(ax, xmin, xmax, label):
@@ -91,7 +100,7 @@ def reports(results_input, results_output):
         ax.annotate('', xy=(xmin, y), xytext=(xmax, y), xycoords='data', textcoords='data',
                     arrowprops={'arrowstyle': '|-|', 'color':'black', 'linewidth': 0.5})
         xcenter = xmin + (xmax-xmin)/2
-        ytext = y + ( ax.get_ylim()[1] - ax.get_ylim()[0] ) / 20
+        ytext = y + ( ax.get_ylim()[1] - ax.get_ylim()[0] ) / 22
         ax.annotate(label, xy=(xcenter,ytext), ha='center', va='center', fontsize=9)
 
     draw_range(ax, 0.5, 4.5, "Unit testing")
