@@ -63,25 +63,48 @@ def reports(results_input, results_output):
     )
     df = df.join(df_googleplay, on="app_id")
     df['tests'] = df[unit_test_frameworks+ui_automation_frameworks+cloud_test_services].any(axis=1)
-
+    df['unit_tests'] = df[unit_test_frameworks].apply(any, axis=1)
+    df['ui_tests'] = df[ui_automation_frameworks].apply(any, axis=1)
+    df["cloud_tests"] = df[cloud_test_services].apply(any, axis=1)
+    df["ci/cd"] = df[ci_services].apply(any, axis=1)
     
     
     # --- Number of projects by framework --- #
-    columns = ['tests'] + unit_test_frameworks+ui_automation_frameworks+cloud_test_services+ci_services
+    columns = (
+        ['tests']
+        + ['unit_tests'] + unit_test_frameworks
+        + ['ui_tests'] + ui_automation_frameworks
+        + ['cloud_tests'] + cloud_test_services
+        + ['ci/cd'] + ci_services
+    )
     colors =  (
         ['C0'] +
-        ['C1'] * len(unit_test_frameworks) 
-        + ['C2'] * len(ui_automation_frameworks)
-        + ['C3'] * len(cloud_test_services)
-        + ['C4'] * len(ci_services) 
+        ['C1'] * (len(unit_test_frameworks) + 1)
+        + ['C2'] * (len(ui_automation_frameworks) + 1)
+        + ['C3'] * (len(cloud_test_services) + 1)
+        + ['C4'] * (len(ci_services) + 1)
     )
-
+    
+    highlights = [
+        'tests',
+        'unit_tests',
+        'ui_tests',
+        'cloud_tests',
+        'ci/cd',
+    ]
     sums = df[columns].sum()
-    labels = sums.index
+    labels = (label in highlights and "• All "+label or label for label in columns)
+    labels = [label.title().replace("_", " ") for label in labels]
     heights = sums.values
     figure, ax = plt.subplots(1, 1)
-
-    ax.bar(range(len(labels)), heights, 0.5, color=colors)
+    ax.bar(
+        range(len(labels)),
+        heights,
+        0.5,
+        color=colors,
+        edgecolor = 'k',
+        linewidth= [column in highlights and 0.9 or 0.0 for column in columns]
+    )
     ax.set_xticklabels(labels, rotation='vertical')
     ax.set_xticks(range(len(labels)))
     ax.tick_params(direction='out', top='off')
@@ -99,7 +122,7 @@ def reports(results_input, results_output):
     ax2.spines['right'].set_visible(False)
     ax2.spines['top'].set_visible(False)
     ax2.spines['left'].set_visible(False)
-    
+    ax2.set_ylabel("Percentage of projects")
 
     def draw_range(ax, xmin, xmax, label):
         y=400
@@ -109,10 +132,10 @@ def reports(results_input, results_output):
         ytext = y + ( ax.get_ylim()[1] - ax.get_ylim()[0] ) / 22
         ax.annotate(label, xy=(xcenter,ytext), ha='center', va='center', fontsize=9)
 
-    draw_range(ax, 0.5, 4.5, "Unit testing")
-    draw_range(ax, 4.5, 12.5, "UI automation")
-    draw_range(ax, 12.5, 18.5, "Cloud testing")
-    draw_range(ax, 18.5, 22.5, "CI/CD")
+    draw_range(ax, 0.5, 5.5, "Unit test")
+    draw_range(ax, 5.5, 14.5, "UI automation")
+    draw_range(ax, 14.5, 21.5, "Cloud test")
+    draw_range(ax, 21.5, 26.5, "CI/CD")
     
     figure.tight_layout()
     figure.savefig(path_join(results_output, "framework_count.pdf"))
