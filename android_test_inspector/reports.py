@@ -3,6 +3,8 @@ from datetime import datetime
 from os.path import join as path_join
 
 import click
+import matplotlib
+matplotlib.rcParams['font.family'] = 'serif'
 import matplotlib.pyplot as plt
 import pandas
 import numpy as np
