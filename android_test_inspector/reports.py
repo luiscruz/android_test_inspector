@@ -67,15 +67,19 @@ def reports(results_input, results_output):
     df['ui_tests'] = df[ui_automation_frameworks].apply(any, axis=1)
     df["cloud_tests"] = df[cloud_test_services].apply(any, axis=1)
     df["ci/cd"] = df[ci_services].apply(any, axis=1)
-    
-    
+    df['age'] = (now - df['created_at'])
+    df['age_numeric'] = (now - df['created_at']).astype('<m8[Y]').astype('int')
+    df['time_since_last_update'] = (now - df['last_updated'])
+    df['time_since_last_update_numeric'] = df['time_since_last_update'].astype('<m8[Y]').astype('int')
+    df_old = df[df['age_numeric']>=2]
+
     # --- Number of projects by framework --- #
     columns = (
         ['tests']
         + ['unit_tests'] + unit_test_frameworks
         + ['ui_tests'] + ui_automation_frameworks
         + ['cloud_tests'] + cloud_test_services
-        + ['ci/cd'] + ci_services
+        # + ['ci/cd'] + ci_services
     )
     colors =  (
         ['C0'] +
@@ -108,7 +112,7 @@ def reports(results_input, results_output):
     ax.set_xticklabels(labels, rotation='vertical')
     ax.set_xticks(range(len(labels)))
     ax.tick_params(direction='out', top='off')
-    ax.set_title("Number of projects by test framework")
+    # ax.set_title("Number of projects by test framework")
     ax.set_ylabel("Number of projects")
     ax.spines['right'].set_visible(False)
     ax.spines['top'].set_visible(False)
@@ -135,11 +139,111 @@ def reports(results_input, results_output):
     draw_range(ax, 0.5, 5.5, "Unit test")
     draw_range(ax, 5.5, 14.5, "UI automation")
     draw_range(ax, 14.5, 21.5, "Cloud test")
-    draw_range(ax, 21.5, 26.5, "CI/CD")
+    # draw_range(ax, 21.5, 26.5, "CI/CD")
     
     figure.tight_layout()
     figure.savefig(path_join(results_output, "framework_count.pdf"))
     # --------------------------------------- #
+
+    # --- Percentage of Android tests over the age of the apps --- #
+    def tests_in_projects_by_time_of_creation(df_projects, frameworks, label=None,
+                                              title=None,
+                                              zorder=1,
+                                              verbose=False):
+        portions = []
+        n_projects_with_tests_history = []
+        total_projects_history = []
+        age_max = df_projects['age_numeric'].max()+1
+        for age in range(age_max):
+            n_projects_with_tests = df_projects[df_projects['age_numeric']==age][frameworks].apply(any, axis=1).sum()
+            n_projects_with_tests_history.append(n_projects_with_tests)
+            total_projects = len(df_projects[df_projects['age_numeric']==age].index)
+            total_projects_history.append(total_projects)
+            if total_projects == 0:
+                portion = 0
+            else:
+                portion = n_projects_with_tests/total_projects
+            portions.append(portion)
+            if verbose:
+                print("Age {}:".format(age))
+                print("{} out of {} projects ({:.1%}).".format(n_projects_with_tests, total_projects, portion))
+            
+        plt.plot(range(age_max), portions, label=label, zorder=zorder)
+        plt.scatter(range(age_max), portions, total_projects_history, marker='o', linewidth='1', zorder=zorder)
+        ax = plt.gca()
+        ax.spines['right'].set_visible(False)
+        ax.spines['top'].set_visible(False)
+        ax.spines['left'].set_visible(False)
+        ax.set_xticks(range(age_max))
+        ax.set_yticklabels(["{:.0%}".format(label) for label in ax.get_yticks()])
+        ax.set_ylabel("Percentage of projects")
+        ax.yaxis.grid(linestyle='dotted', color='gray')
+        if label:
+            legend = ax.legend(loc='upper center', shadow=False)
+        if title:
+            ax.set_title(title)
+
+    figure, ax = plt.subplots(1,1)
+    tests_in_projects_by_time_of_creation(df, unit_test_frameworks+ui_automation_frameworks+cloud_test_services, zorder=1)
+    tests_in_projects_by_time_of_creation(df, unit_test_frameworks+ui_automation_frameworks+cloud_test_services, label="Any", zorder=2)
+    tests_in_projects_by_time_of_creation(df, unit_test_frameworks, label="Unit tests", zorder=3)
+    tests_in_projects_by_time_of_creation(df, ui_automation_frameworks, label="UI Automation", zorder=4)
+    tests_in_projects_by_time_of_creation(df, cloud_test_services, label="Cloud testing", zorder=5)
+    ax.set_xlabel("Years since creation")
+    figure.tight_layout()
+    figure.savefig(path_join(results_output, "tests_by_age.pdf"))
+    # ------------------------------------------------------------ #
+
+    # --- Percentage of 2+years apps with tests grouped by time since last update --- #
+    def tests_in_projects_by_time_of_update(df_projects, frameworks, label=None,
+                                              title=None,
+                                              verbose=False):
+        portions = []
+        n_projects_with_tests_history = []
+        total_projects_history = []
+        age_max = df_projects['time_since_last_update_numeric'].max()+1
+        for age in range(age_max):
+            n_projects_with_tests = df_projects[df_projects['time_since_last_update_numeric']==age][frameworks].apply(any, axis=1).sum()
+            n_projects_with_tests_history.append(n_projects_with_tests)
+            total_projects = len(df_projects[df_projects['time_since_last_update_numeric']==age].index)
+            total_projects_history.append(total_projects)
+            if total_projects == 0:
+                portion = 0
+            else:
+                portion = n_projects_with_tests/total_projects
+            portions.append(portion)
+            if verbose:
+                print("Age {}:".format(age))
+                print("{} out of {} projects ({:.1%}).".format(n_projects_with_tests, total_projects, portion))
+    
+        plt.plot(range(age_max), portions, label=label)
+        plt.scatter(range(age_max), portions, total_projects_history, marker='o', linewidth='1')
+        ax = plt.gca()
+        ax.spines['right'].set_visible(False)
+        ax.spines['top'].set_visible(False)
+        ax.spines['left'].set_visible(False)
+        ax.spines['bottom'].set_visible(True)
+        ax.set_xticks(range(age_max))
+        ax.set_yticklabels(["{:.0%}".format(label) for label in ax.get_yticks()])
+        ax.set_ylabel("Percentage of projects")
+        ax.yaxis.grid(linestyle='dotted', color='gray')
+
+
+        if label:
+            legend = ax.legend(loc='upper center', shadow=False)
+        if title:
+            plt.title(title)
+    figure, ax = plt.subplots(1,1)
+    tests_in_projects_by_time_of_update(df_old, unit_test_frameworks+ui_automation_frameworks+cloud_test_services)
+    tests_in_projects_by_time_of_update(df_old, unit_test_frameworks+ui_automation_frameworks+cloud_test_services, label="Any")
+    tests_in_projects_by_time_of_update(df_old, unit_test_frameworks, label="Unit tests")
+    tests_in_projects_by_time_of_update(df_old, ui_automation_frameworks, label="UI Automation")
+    tests_in_projects_by_time_of_update(df_old, cloud_test_services, label="Cloud testing")
+    ax.set_xlabel("Years since last update")
+    figure.tight_layout()
+    figure.savefig(path_join(results_output, "mature_tests_by_update.pdf"))
+    
+    # ------------------------------------------------------------------------------- #
 
 
 def exit_gracefully(start_time):
