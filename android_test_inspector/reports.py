@@ -1,6 +1,7 @@
 import time
 from datetime import datetime
 from os.path import join as path_join
+from math import log, floor
 
 import click
 import matplotlib
@@ -8,6 +9,8 @@ matplotlib.rcParams['font.family'] = 'serif'
 import matplotlib.pyplot as plt
 import pandas
 import numpy as np
+from tabulate import tabulate
+import tabulate as T
 
 ui_automation_frameworks = [
     "androidviewclient",
@@ -43,6 +46,33 @@ ci_services = [
     'codefresh',
 ]
 
+downloads_scale = [
+ '1 - 5',
+ '10 - 50',
+ '50 - 100',
+ '100 - 500',
+ '500 - 1,000',
+ '1,000 - 5,000',
+ '5,000 - 10,000',
+ '10,000 - 50,000',
+ '50,000 - 100,000',
+ '100,000 - 500,000',
+ '500,000 - 1,000,000',
+ '1,000,000 - 5,000,000',
+ '5,000,000 - 10,000,000',
+ '10,000,000 - 50,000,000',
+ '50,000,000 - 100,000,000',
+ '100,000,000 - 500,000,000',
+ '500,000,000 - 1,000,000,000',
+ '1,000,000,000 - 5,000,000,000',
+ '5,000,000,000 - 10,000,000,000',
+]
+
+def human_format(number):
+    units = ['', 'K', 'M', 'G', 'T', 'P']
+    k = 1000.0
+    magnitude = int(floor(log(number, k)))
+    return '%.0f%s' % (number / k**magnitude, units[magnitude])
 
 @click.command()
 @click.option('-i','--results_input', default=".", type=click.Path(exists=True))
@@ -69,6 +99,8 @@ def reports(results_input, results_output):
     df['time_since_last_update'] = (now - df['last_updated'])
     df['time_since_last_update_numeric'] = df['time_since_last_update'].astype('<m8[Y]').astype('int')
     df_old = df[df['age_numeric']>=2]
+    df["downloads"] = df["downloads"].astype("category", categories=downloads_scale, ordered=True)
+    df_with_google_data = df[~df["rating_count"].isnull()]
 
     colors_dict = {
         'any': 'C0',
@@ -247,6 +279,73 @@ def reports(results_input, results_output):
     figure.savefig(path_join(results_output, "mature_tests_by_update.pdf"))
     
     # ------------------------------------------------------------------------------- #
+
+    # --- Descriptive stats for popularity metrics --- #
+    dictionary = {
+        "count": "$N$",
+        "mean": "$\\bar{x}$",
+        "std": "$s$",        
+        "min": "$min$",        
+        "max": "$max$",
+        "rating_value": "Rating"        
+    }
+    stats = df[['stars','forks', 'contributors', 'commits', 'rating_value', 'rating_count', 'downloads']].describe()
+    stats = stats.applymap((lambda x: "${:.1f}$".format(float(x)))).astype(str)
+    stats[['stars','forks', 'contributors', 'commits', 'rating_count']] = stats[['stars','forks', 'contributors', 'commits', 'rating_count']].applymap((lambda x: "${:.0f}$".format(float(x[1:-1])))).astype(str)
+    stats.loc['count']= stats.loc['count'].map((lambda x: "${:.0f}$".format(float(x[1:-1])))).astype(str)
+    
+    print(stats.loc['count'])
+    old_escape_rules = T.LATEX_ESCAPE_RULES
+    T.LATEX_ESCAPE_RULES = {'%': '\\%'}
+    with open(path_join(results_output, "popularity_metrics_stats.tex"), 'w') as f:
+        f.write(tabulate(
+            stats,
+            headers=[dictionary.get(column, column.title().replace("_", " ")) for column in stats.columns],
+            showindex=[dictionary.get(name, name) for name in stats.index],
+            tablefmt='latex',
+            floatfmt=".1f"
+        ))
+    T.LATEX_ESCAPE_RULES = old_escape_rules
+    # -------------------------------------------------- #
+    
+    # --- Histogram for downloads --- #
+    downloads_distribution = df_with_google_data.groupby('downloads')['downloads'].count()
+    heights = df_with_google_data.groupby('downloads')['downloads'].count().values
+
+    
+    figure, ax = plt.subplots(1,1)
+    labels = [
+        str(human_format(int(cat.split(' - ')[0].replace(',',''))))
+        + " – " +
+        str(human_format(int(cat.split(' - ')[1].replace(',',''))))
+        for cat in downloads_scale
+    ]
+    ax.bar(
+        range(len(labels)),
+        heights,
+        width=0.9,
+        # color=[column == '10,000 - 50,000' and 'C1' or 'C0' for column in downloads_scale],
+        # edgecolor = 'k',
+        # linewidth= [column in highlights and 0.9 or 0.0 for column in columns]
+    )
+    # downloads_distribution.plot.bar(
+    #     ax=ax,
+    #     width=0.9,
+    #     fontsize=17,
+    #     color=[column == '10,000 - 50,000' and 'r' or 'b' for column in downloads_scale],
+    # )
+    ax.set_xticklabels(labels, fontsize=17, rotation='vertical')
+    ax.set_xlabel("Downloads", fontsize=18)
+    ax.set_ylabel("Number of apps", fontsize=18)
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+    ax.spines['bottom'].set_visible(True)
+    ax.yaxis.grid(linestyle='dotted', color='gray')
+    figure.tight_layout()
+    figure.savefig(path_join(results_output, "downloads_hist.pdf"))
+    # -------------------------------------------------- #
+    
 
 
 def exit_gracefully(start_time):

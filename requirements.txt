@@ -5,3 +5,4 @@ pygithub
 pandas_profiling
 google_play_reader
 friendly-sonar
+tabulate
