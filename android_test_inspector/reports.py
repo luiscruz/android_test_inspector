@@ -11,6 +11,7 @@ import pandas
 import numpy as np
 from tabulate import tabulate
 import tabulate as T
+from scipy.stats import mannwhitneyu
 
 ui_automation_frameworks = [
     "androidviewclient",
@@ -101,6 +102,9 @@ def reports(results_input, results_output):
     df_old = df[df['age_numeric']>=2]
     df["downloads"] = df["downloads"].astype("category", categories=downloads_scale, ordered=True)
     df_with_google_data = df[~df["rating_count"].isnull()]
+    df_with_tests = df[df['tests']]
+    df_without_tests = df[~df['tests']]
+    
 
     colors_dict = {
         'any': 'C0',
@@ -329,7 +333,7 @@ def reports(results_input, results_output):
         ax=ax,
         width=0.9,
         fontsize=17,
-    )
+    )    
     ax.set_xticklabels(labels, fontsize=17, rotation='vertical')
     ax.set_xlabel("Downloads", fontsize=18)
     ax.set_ylabel("Number of apps", fontsize=18)
@@ -338,10 +342,58 @@ def reports(results_input, results_output):
     ax.spines['left'].set_visible(False)
     ax.spines['bottom'].set_visible(True)
     ax.yaxis.grid(linestyle='dotted', color='gray')
+    
+    ax2 = ax.twinx()
+    ax2.grid(False)
+    ax2.set_ylim(ax.get_ylim())
+    ax2.set_yticklabels(["{:.0%}".format(tick/len(df_with_google_data)) for tick in ax2.get_yticks()], fontsize=17)
+    ax2.spines['right'].set_visible(False)
+    ax2.spines['top'].set_visible(False)
+    ax2.spines['left'].set_visible(False)
+    ax2.set_ylabel("Percentage of apps", fontsize=18)
+    
+    
     figure.tight_layout()
     figure.savefig(path_join(results_output, "downloads_hist.pdf"))
     # -------------------------------------------------- #
+
+    # ---------- Hypothesis testing ------------- #
+    popularity_metrics = [
+        'stars',
+        'forks',
+        'contributors',
+        'commits',
+        'rating_value',
+        'rating_count',
+        # 'downloads'
+    ]
     
+    def analyze_populations(a,b):
+        mean_difference = np.mean(b) - np.mean(a)
+        test, pvalue = mannwhitneyu(a,b)
+        return {
+            'Test': "${:,.0f}$".format(test),
+            '$p$-value': "${:.4f}$".format(pvalue),
+            '$\\Delta\\bar{x}$': "${:,.2f}$".format(mean_difference),
+        }
+    tests = [analyze_populations(df_without_tests[metric].dropna(), df_with_tests[metric].dropna()) for metric in popularity_metrics]
+    keys = [
+        'Test',
+        '$\mu$-value',
+        'mean difference',
+    ]
+    old_escape_rules = T.LATEX_ESCAPE_RULES
+    T.LATEX_ESCAPE_RULES = {'%': '\\%'}
+    with open(path_join(results_output, "popularity_metrics_test.tex"), 'w') as f:
+        f.write(tabulate(
+            tests,
+            headers="keys",
+            showindex=[metric.title().replace("_"," ") for metric in popularity_metrics],
+            tablefmt='latex',
+            
+        ))
+    T.LATEX_ESCAPE_RULES = old_escape_rules
+    # ------------------------------------------- #
 
 
 def exit_gracefully(start_time):
