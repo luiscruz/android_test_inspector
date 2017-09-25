@@ -293,8 +293,7 @@ def reports(results_input, results_output):
     stats = stats.applymap((lambda x: "${:.1f}$".format(float(x)))).astype(str)
     stats[['stars','forks', 'contributors', 'commits', 'rating_count']] = stats[['stars','forks', 'contributors', 'commits', 'rating_count']].applymap((lambda x: "${:.0f}$".format(float(x[1:-1])))).astype(str)
     stats.loc['count']= stats.loc['count'].map((lambda x: "${:.0f}$".format(float(x[1:-1])))).astype(str)
-    
-    print(stats.loc['count'])
+
     old_escape_rules = T.LATEX_ESCAPE_RULES
     T.LATEX_ESCAPE_RULES = {'%': '\\%'}
     with open(path_join(results_output, "popularity_metrics_stats.tex"), 'w') as f:
@@ -320,20 +319,17 @@ def reports(results_input, results_output):
         str(human_format(int(cat.split(' - ')[1].replace(',',''))))
         for cat in downloads_scale
     ]
-    ax.bar(
-        range(len(labels)),
-        heights,
-        width=0.9,
-        # color=[column == '10,000 - 50,000' and 'C1' or 'C0' for column in downloads_scale],
-        # edgecolor = 'k',
-        # linewidth= [column in highlights and 0.9 or 0.0 for column in columns]
-    )
-    # downloads_distribution.plot.bar(
-    #     ax=ax,
+    # ax.bar(
+    #     range(len(labels)),
+    #     heights,
     #     width=0.9,
-    #     fontsize=17,
-    #     color=[column == '10,000 - 50,000' and 'r' or 'b' for column in downloads_scale],
+    #     color=[column == '10,000 - 50,000' and 'C1' or 'C0' for column in downloads_scale],
     # )
+    downloads_distribution.plot.bar(
+        ax=ax,
+        width=0.9,
+        fontsize=17,
+    )
     ax.set_xticklabels(labels, fontsize=17, rotation='vertical')
     ax.set_xlabel("Downloads", fontsize=18)
     ax.set_ylabel("Number of apps", fontsize=18)
