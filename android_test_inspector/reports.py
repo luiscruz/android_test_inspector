@@ -448,6 +448,34 @@ def reports(results_input, results_output):
     figure.savefig(path_join(results_output, "ci_cd_hist.pdf"))
     # ------------------------------------------------------- #
 
+    # ---------------- Mosaic CI/CD ---------------- #
+    from statsmodels.graphics.mosaicplot import mosaic
+    def properties(keys):
+        keys = list(map(lambda i: i == 'True', keys))
+        if all(keys):
+            return {'color': 'lightgreen'}
+        elif any(keys):
+            return {'color': 'lightgoldenrodyellow'}
+        return {'color': 'lightcoral'}
+
+    figure, ax  = plt.subplots()
+    labelizer = lambda k: {
+        ('False','False'): 'No Tests and No CI/CD\n({:.1%})'.format(1 - df[["tests", "ci/cd"]].any(axis=1).sum()/len(df)),
+        ('False','True'): 'No Tests but With CI/CD\n({:.1%})'.format(sum(~df["tests"] & df["ci/cd"])/len(df)),
+        ('True','False'): 'With Tests but No CI/CD\n({:.1%})'.format(sum(df["tests"] & ~df["ci/cd"])/len(df)),
+        ('True','True'): 'With Tests and With CI/CD\n({:.1%})'.format(df[["tests", "ci/cd"]].all(axis=1).sum()/len(df)),
+    }.get(k, k)
+
+    props = lambda key: {'color': 'r' if 'T' in key else 'gray'}
+    mosaic(df, ["tests", "ci/cd"], properties= properties, labelizer=labelizer, ax=ax)
+    ax.set_xticklabels(['No tests', 'With tests'])
+    ax.set_yticklabels(['With CI/CD', 'No CI/CD'])
+    
+    ax.invert_yaxis()
+    figure.tight_layout()
+    figure.savefig(path_join(results_output, "ci_cd_mosaic.pdf"))
+    # ------------------------------------------------------- #
+
 
 def exit_gracefully(start_time):
     """Print time spent"""
