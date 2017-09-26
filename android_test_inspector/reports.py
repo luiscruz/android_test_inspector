@@ -104,7 +104,7 @@ def reports(results_input, results_output):
     df_with_google_data = df[~df["rating_count"].isnull()]
     df_with_tests = df[df['tests']]
     df_without_tests = df[~df['tests']]
-    
+
 
     colors_dict = {
         'any': 'C0',
@@ -129,7 +129,7 @@ def reports(results_input, results_output):
         + [colors_dict['cloud_test_services']] * (len(cloud_test_services) + 1)
         + [colors_dict['ci_services']] * (len(ci_services) + 1)
     )
-    
+
     highlights = [
         'tests',
         'unit_tests',
@@ -159,7 +159,7 @@ def reports(results_input, results_output):
     ax.spines['top'].set_visible(False)
     ax.spines['left'].set_visible(False)
     ax.yaxis.grid(linestyle='dotted')
-    
+
     ax2 = ax.twinx()
     ax2.grid(False)
     ax2.set_ylim(ax.get_ylim())
@@ -181,7 +181,7 @@ def reports(results_input, results_output):
     draw_range(ax, 5.5, 14.5, "UI automation")
     draw_range(ax, 14.5, 21.5, "Cloud test")
     # draw_range(ax, 21.5, 26.5, "CI/CD")
-    
+
     figure.tight_layout()
     figure.savefig(path_join(results_output, "framework_count.pdf"))
     # --------------------------------------- #
@@ -208,7 +208,7 @@ def reports(results_input, results_output):
             if verbose:
                 print("Age {}:".format(age))
                 print("{} out of {} projects ({:.1%}).".format(n_projects_with_tests, total_projects, portion))
-            
+
         plt.plot(range(age_max), portions, label=label, zorder=zorder)
         plt.scatter(range(age_max), portions, total_projects_history, marker='o', linewidth='1', zorder=zorder)
         ax = plt.gca()
@@ -255,7 +255,7 @@ def reports(results_input, results_output):
             if verbose:
                 print("Age {}:".format(age))
                 print("{} out of {} projects ({:.1%}).".format(n_projects_with_tests, total_projects, portion))
-    
+
         plt.plot(range(age_max), portions, label=label, zorder=zorder)
         plt.scatter(range(age_max), portions, total_projects_history, marker='o', linewidth='1', zorder=zorder)
         ax = plt.gca()
@@ -281,17 +281,17 @@ def reports(results_input, results_output):
     ax.set_xlabel("Years since last update")
     figure.tight_layout()
     figure.savefig(path_join(results_output, "mature_tests_by_update.pdf"))
-    
+
     # ------------------------------------------------------------------------------- #
 
     # --- Descriptive stats for popularity metrics --- #
     dictionary = {
         "count": "$N$",
         "mean": "$\\bar{x}$",
-        "std": "$s$",        
-        "min": "$min$",        
+        "std": "$s$",
+        "min": "$min$",
         "max": "$max$",
-        "rating_value": "Rating"        
+        "rating_value": "Rating"
     }
     stats = df[['stars','forks', 'contributors', 'commits', 'rating_value', 'rating_count', 'downloads']].describe()
     stats = stats.applymap((lambda x: "${:.1f}$".format(float(x)))).astype(str)
@@ -310,12 +310,12 @@ def reports(results_input, results_output):
         ))
     T.LATEX_ESCAPE_RULES = old_escape_rules
     # -------------------------------------------------- #
-    
+
     # --- Histogram for downloads --- #
     downloads_distribution = df_with_google_data.groupby('downloads')['downloads'].count()
     heights = df_with_google_data.groupby('downloads')['downloads'].count().values
 
-    
+
     figure, ax = plt.subplots(1,1)
     labels = [
         str(human_format(int(cat.split(' - ')[0].replace(',',''))))
@@ -333,7 +333,7 @@ def reports(results_input, results_output):
         ax=ax,
         width=0.9,
         fontsize=17,
-    )    
+    )
     ax.set_xticklabels(labels, fontsize=17, rotation='vertical')
     ax.set_xlabel("Downloads", fontsize=18)
     ax.set_ylabel("Number of apps", fontsize=18)
@@ -342,7 +342,7 @@ def reports(results_input, results_output):
     ax.spines['left'].set_visible(False)
     ax.spines['bottom'].set_visible(True)
     ax.yaxis.grid(linestyle='dotted', color='gray')
-    
+
     ax2 = ax.twinx()
     ax2.grid(False)
     ax2.set_ylim(ax.get_ylim())
@@ -351,8 +351,8 @@ def reports(results_input, results_output):
     ax2.spines['top'].set_visible(False)
     ax2.spines['left'].set_visible(False)
     ax2.set_ylabel("Percentage of apps", fontsize=18)
-    
-    
+
+
     figure.tight_layout()
     figure.savefig(path_join(results_output, "downloads_hist.pdf"))
     # -------------------------------------------------- #
@@ -367,7 +367,7 @@ def reports(results_input, results_output):
         'rating_count',
         # 'downloads'
     ]
-    
+
     def analyze_populations(a,b):
         mean_difference = np.mean(b) - np.mean(a)
         test, pvalue = mannwhitneyu(a,b)
@@ -390,10 +390,63 @@ def reports(results_input, results_output):
             headers="keys",
             showindex=[metric.title().replace("_"," ") for metric in popularity_metrics],
             tablefmt='latex',
-            
+
         ))
     T.LATEX_ESCAPE_RULES = old_escape_rules
     # ------------------------------------------- #
+
+    # ---------- Tests vs Rating with Rating count ------------- #
+    x = range(0, 10000 , 100)
+    y_with_tests = tuple(df_with_tests[df_with_tests['rating_count']>i]['rating_value'].mean() for i in x)
+    y_without_tests = tuple(df_without_tests[df_without_tests['rating_count']>i]['rating_value'].mean() for i in x)
+
+    figure, ax = plt.subplots()
+    ax.scatter(x, y_with_tests, marker='.', color='C0', label="With tests", zorder=2)
+    ax.plot(x, y_with_tests, alpha=0.5, color='C0', zorder=1)
+    ax.scatter(x, y_without_tests, marker='2', color='r', label="Without tests", zorder=2)
+    ax.plot(x, y_without_tests, alpha=0.5, color='r', zorder=1)
+    ax.legend(loc='upper center')
+
+    ax.set_ylabel("Rating")
+    ax.set_xlabel("Rating count >")
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+
+    figure.tight_layout()
+    figure.savefig(path_join(results_output, "rating_with_lower_limit.pdf"))
+    # --------------------------------------------------------- #
+
+    # ------------------ CI/CD platforms hist --------------- #
+
+    figure, ax = plt.subplots()
+    namepedia={
+        "circleci": "Circle CI",
+        "travis": "Travis CI",
+    }
+    df[['ci/cd']+ci_services].sum().plot.bar(
+        fontsize=17, edgecolor = 'k', linewidth = [1]+[0]*len(ci_services)
+    )
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+    ax.yaxis.grid(linestyle='dotted', color='gray')
+    ax.set_ylabel("Number of apps", fontsize=17)
+    ax.set_xticklabels(["All"]+[namepedia.get(key, key.title()) for key in ci_services])
+    
+    ax2 = ax.twinx()
+    ax2.grid(False)
+    ax2.set_ylim(ax.get_ylim())
+    ax2.set_yticklabels(["{:.0%}".format(tick/len(df)) for tick in ax2.get_yticks()], fontsize=17)
+    ax2.spines['right'].set_visible(False)
+    ax2.spines['top'].set_visible(False)
+    ax2.spines['left'].set_visible(False)
+    ax2.set_ylabel("Percentage of apps", fontsize=17)
+    
+    for p in ax.patches:
+        ax.annotate("{:.0f}".format(p.get_height()), (p.get_x() +p.get_width()/2, p.get_height()+4), ha='center', fontsize=15)
+    figure.tight_layout()
+    figure.savefig(path_join(results_output, "ci_cd_hist.pdf"))
+    # ------------------------------------------------------- #
 
 
 def exit_gracefully(start_time):
