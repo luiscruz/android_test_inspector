@@ -401,9 +401,9 @@ def reports(results_input, results_output):
     y_without_tests = tuple(df_without_tests[df_without_tests['rating_count']>i]['rating_value'].mean() for i in x)
 
     figure, ax = plt.subplots()
-    ax.scatter(x, y_with_tests, marker='.', color='C0', label="With tests", zorder=2)
+    ax.scatter(x, y_with_tests, marker='o', alpha=0.9, color='C0', label="With tests", zorder=2)
     ax.plot(x, y_with_tests, alpha=0.5, color='C0', zorder=1)
-    ax.scatter(x, y_without_tests, marker='2', color='r', label="Without tests", zorder=2)
+    ax.scatter(x, y_without_tests, marker='2', alpha=0.9, color='r', label="Without tests", zorder=2)
     ax.plot(x, y_without_tests, alpha=0.5, color='r', zorder=1)
     ax.legend(loc='upper center')
 
