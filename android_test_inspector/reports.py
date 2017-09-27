@@ -285,19 +285,20 @@ def reports(results_input, results_output):
     # ------------------------------------------------------------------------------- #
 
     # --- Descriptive stats for popularity metrics --- #
+    from scipy.stats import shapiro
+    from scipy.stats import normaltest
     dictionary = {
         "count": "$N$",
         "mean": "$\\bar{x}$",
         "std": "$s$",
         "min": "$min$",
         "max": "$max$",
-        "rating_value": "Rating"
+        "rating_value": "Rating",
+        "normality_pvalue": "$X \sim N$"
     }
     stats = df[['stars','forks', 'contributors', 'commits', 'rating_value', 'rating_count', 'downloads']].describe()
-    stats = stats.applymap((lambda x: "${:.1f}$".format(float(x)))).astype(str)
-    stats[['stars','forks', 'contributors', 'commits', 'rating_count']] = stats[['stars','forks', 'contributors', 'commits', 'rating_count']].applymap((lambda x: "${:.0f}$".format(float(x[1:-1])))).astype(str)
-    stats.loc['count']= stats.loc['count'].map((lambda x: "${:.0f}$".format(float(x[1:-1])))).astype(str)
-
+    stats.loc['normality_pvalue']= df[['stars','forks', 'contributors', 'commits', 'rating_value', 'rating_count']].apply(lambda sample: shapiro(sample.dropna())[1])
+    stats.loc['normality_pvalue'] = stats.loc['normality_pvalue'].apply(lambda x: x<0.01 and "$<0.01$" or "{:.2f}".format(x))
     old_escape_rules = T.LATEX_ESCAPE_RULES
     T.LATEX_ESCAPE_RULES = {'%': '\\%'}
     with open(path_join(results_output, "popularity_metrics_stats.tex"), 'w') as f:

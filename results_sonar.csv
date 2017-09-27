@@ -1,4 +1,4 @@
-package,issues,critical_issues,major_issues,minor_issues
+package,issues,critical_issues,major_issues,minor_issues,files_processed
 com.github.yeriomin.yalpstore,505,36,154,308,359
 hr.kravarscan.enchantedfortress,72,35,11,26,52
 de.reimardoeffinger.quickdic,459,47,211,194,423
