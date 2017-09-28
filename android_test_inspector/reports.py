@@ -12,6 +12,7 @@ import numpy as np
 from tabulate import tabulate
 import tabulate as T
 from scipy.stats import mannwhitneyu
+from scipy.stats import ks_2samp
 
 ui_automation_frameworks = [
     "androidviewclient",
@@ -285,20 +286,19 @@ def reports(results_input, results_output):
     # ------------------------------------------------------------------------------- #
 
     # --- Descriptive stats for popularity metrics --- #
-    from scipy.stats import shapiro
-    from scipy.stats import normaltest
     dictionary = {
         "count": "$N$",
         "mean": "$\\bar{x}$",
         "std": "$s$",
         "min": "$min$",
         "max": "$max$",
-        "rating_value": "Rating",
-        "normality_pvalue": "$X \sim N$"
+        "rating_value": "Rating"
     }
     stats = df[['stars','forks', 'contributors', 'commits', 'rating_value', 'rating_count', 'downloads']].describe()
-    stats.loc['normality_pvalue']= df[['stars','forks', 'contributors', 'commits', 'rating_value', 'rating_count']].apply(lambda sample: shapiro(sample.dropna())[1])
-    stats.loc['normality_pvalue'] = stats.loc['normality_pvalue'].apply(lambda x: x<0.01 and "$<0.01$" or "{:.2f}".format(x))
+    stats = stats.applymap((lambda x: "${:.1f}$".format(float(x)))).astype(str)
+    stats[['stars','forks', 'contributors', 'commits', 'rating_count']] = stats[['stars','forks', 'contributors', 'commits', 'rating_count']].applymap((lambda x: "${:.0f}$".format(float(x[1:-1])))).astype(str)
+    stats.loc['count']= stats.loc['count'].map((lambda x: "${:.0f}$".format(float(x[1:-1])))).astype(str)
+
     old_escape_rules = T.LATEX_ESCAPE_RULES
     T.LATEX_ESCAPE_RULES = {'%': '\\%'}
     with open(path_join(results_output, "popularity_metrics_stats.tex"), 'w') as f:
@@ -369,15 +369,19 @@ def reports(results_input, results_output):
         # 'downloads'
     ]
 
-    def analyze_populations(a,b):
+    def analyze_populations(a,b, continuous=True):
         mean_difference = np.mean(b) - np.mean(a)
-        test, pvalue = mannwhitneyu(a,b)
+        ks_test, ks_p = ks_2samp(a,b)
+        mwu_test, mwu_p = mannwhitneyu(a,b)
+        
         return {
-            'Test': "${:,.0f}$".format(test),
-            '$p$-value': "${:.4f}$".format(pvalue),
+            # 'MW': "${:.4f}$".format(mwu_p),
+            # 'KS': continuous and "${:.4f}$".format(ks_p) or "n.a.",
+            'Test': continuous and "${:,.0f}$".format(ks_test) or "${:,.0f}$".format(mwu_test),
+            '$p$-value': continuous and "${:.4f}$".format(ks_p) or "${:.4f}$".format(mwu_p),
             '$\\Delta\\bar{x}$': "${:,.2f}$".format(mean_difference),
         }
-    tests = [analyze_populations(df_without_tests[metric].dropna(), df_with_tests[metric].dropna()) for metric in popularity_metrics]
+    tests = [analyze_populations(df_without_tests[metric].dropna(), df_with_tests[metric].dropna(), False) for metric in popularity_metrics]
     keys = [
         'Test',
         '$\mu$-value',
@@ -402,9 +406,9 @@ def reports(results_input, results_output):
     y_without_tests = tuple(df_without_tests[df_without_tests['rating_count']>i]['rating_value'].mean() for i in x)
 
     figure, ax = plt.subplots()
-    ax.scatter(x, y_with_tests, marker='o', alpha=0.9, color='C0', label="With tests", zorder=2)
+    ax.scatter(x, y_with_tests, marker='.', color='C0', label="With tests", zorder=2)
     ax.plot(x, y_with_tests, alpha=0.5, color='C0', zorder=1)
-    ax.scatter(x, y_without_tests, marker='2', alpha=0.9, color='r', label="Without tests", zorder=2)
+    ax.scatter(x, y_without_tests, marker='2', color='r', label="Without tests", zorder=2)
     ax.plot(x, y_without_tests, alpha=0.5, color='r', zorder=1)
     ax.legend(loc='upper center')
 
@@ -449,33 +453,11 @@ def reports(results_input, results_output):
     figure.savefig(path_join(results_output, "ci_cd_hist.pdf"))
     # ------------------------------------------------------- #
 
-    # ---------------- Mosaic CI/CD ---------------- #
-    from statsmodels.graphics.mosaicplot import mosaic
-    def properties(keys):
-        keys = list(map(lambda i: i == 'True', keys))
-        if all(keys):
-            return {'color': 'lightgreen'}
-        elif any(keys):
-            return {'color': 'lightgoldenrodyellow'}
-        return {'color': 'lightcoral'}
+    # ------------------ Sonar vs tests --------------- #
 
-    figure, ax  = plt.subplots()
-    labelizer = lambda k: {
-        ('False','False'): 'No Tests and No CI/CD\n({:.1%})'.format(1 - df[["tests", "ci/cd"]].any(axis=1).sum()/len(df)),
-        ('False','True'): 'No Tests but With CI/CD\n({:.1%})'.format(sum(~df["tests"] & df["ci/cd"])/len(df)),
-        ('True','False'): 'With Tests but No CI/CD\n({:.1%})'.format(sum(df["tests"] & ~df["ci/cd"])/len(df)),
-        ('True','True'): 'With Tests and With CI/CD\n({:.1%})'.format(df[["tests", "ci/cd"]].all(axis=1).sum()/len(df)),
-    }.get(k, k)
 
-    props = lambda key: {'color': 'r' if 'T' in key else 'gray'}
-    mosaic(df, ["tests", "ci/cd"], properties= properties, labelizer=labelizer, ax=ax)
-    ax.set_xticklabels(['No tests', 'With tests'])
-    ax.set_yticklabels(['With CI/CD', 'No CI/CD'])
-    
-    ax.invert_yaxis()
-    figure.tight_layout()
-    figure.savefig(path_join(results_output, "ci_cd_mosaic.pdf"))
-    # ------------------------------------------------------- #
+
+    # ------------------------------------------------- #
 
 
 def exit_gracefully(start_time):
