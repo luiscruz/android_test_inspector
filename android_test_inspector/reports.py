@@ -13,6 +13,7 @@ from tabulate import tabulate
 import tabulate as T
 from scipy.stats import mannwhitneyu
 from scipy.stats import ks_2samp
+from scipy.stats import shapiro
 
 ui_automation_frameworks = [
     "androidviewclient",
@@ -91,6 +92,12 @@ def reports(results_input, results_output):
         index_col='package'
     )
     df = df.join(df_googleplay, on="app_id")
+    df_sonar = pandas.read_csv("results_sonar.csv", index_col='package')
+    df_sonar.fillna(0, inplace=True)
+    df_sonar = df_sonar.add_prefix('sonar_')
+    df = df.join(df_sonar, on="app_id")
+    
+    #Feature engineering
     df['tests'] = df[unit_test_frameworks+ui_automation_frameworks+cloud_test_services].any(axis=1)
     df['unit_tests'] = df[unit_test_frameworks].apply(any, axis=1)
     df['ui_tests'] = df[ui_automation_frameworks].apply(any, axis=1)
@@ -102,6 +109,10 @@ def reports(results_input, results_output):
     df['time_since_last_update_numeric'] = df['time_since_last_update'].astype('<m8[Y]').astype('int')
     df_old = df[df['age_numeric']>=2]
     df["downloads"] = df["downloads"].astype("category", categories=downloads_scale, ordered=True)
+    df['sonar_issues_ratio'] = df['sonar_issues'].divide(df['sonar_files_processed'])
+    df['sonar_critical_issues_ratio'] = df['sonar_critical_issues'].divide(df['sonar_files_processed'])
+    df['sonar_major_issues_ratio'] = df['sonar_major_issues'].divide(df['sonar_files_processed'])
+    df['sonar_minor_issues_ratio'] = df['sonar_minor_issues'].divide(df['sonar_files_processed'])
     df_with_google_data = df[~df["rating_count"].isnull()]
     df_with_tests = df[df['tests']]
     df_without_tests = df[~df['tests']]
@@ -372,7 +383,7 @@ def reports(results_input, results_output):
     def analyze_populations(a,b, continuous=True):
         mean_difference = np.mean(b) - np.mean(a)
         ks_test, ks_p = ks_2samp(a,b)
-        mwu_test, mwu_p = mannwhitneyu(a,b)
+        mwu_test, mwu_p = mannwhitneyu(a,b, alternative='two-sided')
         
         return {
             # 'MW': "${:.4f}$".format(mwu_p),
@@ -454,9 +465,122 @@ def reports(results_input, results_output):
     # ------------------------------------------------------- #
 
     # ------------------ Sonar vs tests --------------- #
+    features = [
+        'sonar_issues_ratio',
+        'sonar_critical_issues_ratio',
+        'sonar_major_issues_ratio',
+        'sonar_minor_issues_ratio'
+    ]
+    names = ['Any', 'Critical', 'Major', 'Minor']
+    options = {
+        'sym':       '',
+        'meanline':  True,
+        'showmeans': True,
+        'patch_artist': True,
+    }
+    
+    figure, ax = plt.subplots(1,1)
+    boxplot = ax.boxplot(
+        [
+            df_tmp[feature].dropna().values
+            for feature in features
+            for df_tmp in (df_with_tests, df_without_tests)
+        ],
+        labels=(
+            'With Tests',
+            'Without Tests'
+        )*4,
+        **options
+    )
+    
+    colors = (
+        'C0',
+        'darkred'
+    )*len(features)
+    for patch, color in zip(boxplot['boxes'], colors):
+        patch.set_edgecolor(color)
+        patch.set_facecolor((1,1,1,0.8))
+    for cap, whisker, color in zip(boxplot['caps'], boxplot['whiskers'], np.repeat(colors,2)):
+        cap.set_color(color)
+        whisker.set_color(color)
+    
+    # Big hack for legend
+    h1, = ax.plot([1,1], colors[0])
+    h2, = ax.plot([1,1], colors[1])
+    ax.legend((h1, h2),('With Tests', 'Without Tests'), facecolor='white')
+    h1.set_visible(False)
+    h2.set_visible(False)
+    # -----
+
+    ax.yaxis.grid(linestyle='dotted', color='gray')
+    ax.set_xticklabels(names)
+    xticks = np.arange(1.5, 4*2+0.5, 2)
+    ax.set_xticks(xticks)
+    ax.set_ylabel('Number of issues per file')
+    ax.set_xlabel('Severity of issues')
+
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+    ax.spines['left'].set_visible(False)
 
 
-
+    mean_differences = [
+        df_without_tests[feature].dropna().mean() - 
+        df_with_tests[feature].dropna().mean()
+        for feature in features
+    ]
+    median_differences = [
+        df_without_tests[feature].dropna().median() - 
+        df_with_tests[feature].dropna().median()
+        for feature in features
+    ]
+    pvalues = [
+        ks_2samp(df_without_tests[feature].dropna().values,
+        df_with_tests[feature].dropna().values, ).pvalue
+        for feature in features
+    ]
+    bbox_props = dict(boxstyle="round,pad=0.3", fc=(1,1,1,0.8), ec='lightgray', lw=0.5)
+    for name, x, mean_difference, median_difference, pvalue in zip(names, xticks, mean_differences, median_differences, pvalues):
+        ax.annotate(
+            "Δx̅ = {:.2f}\nΔMd = {:.2f} \np = {:.4f}".format(mean_difference, median_difference, pvalue),
+            (x,4.2),
+            va='top', ha='center',
+            fontsize=9,
+            bbox=bbox_props
+        )
+    for patch, pvalue in zip(boxplot['boxes'], np.repeat(pvalues,2)):
+        if pvalue < 0.05:
+            patch.set_facecolor((1.0,1.0,0.8,0.7))
+    
+    figure.tight_layout()
+    figure.savefig(path_join(results_output, "sonar_vs_tests.pdf"))
+    
+    table = tabulate(
+        [
+            (
+                df_tmp[feature].dropna().count(),
+                df_tmp[feature].dropna().median(),
+                df_tmp[feature].dropna().mean(),
+                df_tmp[feature].dropna().std(),
+                shapiro(df_tmp[feature].dropna())[1],
+            )
+            for feature in features
+            for df_tmp in (df_with_tests, df_without_tests)
+        ],
+        headers=['$N$', '$Md$', '$\\bar{x}', '$s$', '$X \sim N$'],
+        showindex=[
+            "{} in {}".format(metric, population)
+            for metric in names
+            for population in ('$W$', '$WO$')
+        ],
+        tablefmt='latex',
+    )
+    old_escape_rules = T.LATEX_ESCAPE_RULES
+    T.LATEX_ESCAPE_RULES = {'%': '\\%'}
+    with open(path_join(results_output, "sonar_metrics.tex"), 'w') as f:
+        f.write(table)
+    T.LATEX_ESCAPE_RULES = old_escape_rules
+    
     # ------------------------------------------------- #
 
 
