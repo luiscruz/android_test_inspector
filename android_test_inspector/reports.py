@@ -6,6 +6,8 @@ from math import log, floor
 import click
 import matplotlib
 matplotlib.rcParams['font.family'] = 'serif'
+matplotlib.rcParams['mathtext.fontset'] = 'cm'
+
 import matplotlib.pyplot as plt
 import pandas
 import numpy as np
@@ -542,10 +544,14 @@ def reports(results_input, results_output):
     bbox_props = dict(boxstyle="round,pad=0.3", fc=(1,1,1,0.8), ec='lightgray', lw=0.5)
     for name, x, mean_difference, median_difference, pvalue in zip(names, xticks, mean_differences, median_differences, pvalues):
         ax.annotate(
-            "Δx̅ = {:.2f}\nΔMd = {:.2f} \np = {:.4f}".format(mean_difference, median_difference, pvalue),
+            (
+                r"$\Delta\bar{{x}} = {:.2f}$".format(mean_difference)+"\n"+
+                r"$\Delta Md = {:.2f}$".format(median_difference)+"\n"+
+                r"$p = {:.4f}$".format(pvalue)
+            ),
             (x,4.2),
             va='top', ha='center',
-            fontsize=9,
+            fontsize=10,
             bbox=bbox_props
         )
     for patch, pvalue in zip(boxplot['boxes'], np.repeat(pvalues,2)):
