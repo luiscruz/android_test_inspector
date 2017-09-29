@@ -551,7 +551,7 @@ def reports(results_input, results_output):
             ),
             (x,4.2),
             va='top', ha='center',
-            fontsize=10,
+            fontsize=11,
             bbox=bbox_props
         )
     for patch, pvalue in zip(boxplot['boxes'], np.repeat(pvalues,2)):
@@ -560,7 +560,9 @@ def reports(results_input, results_output):
     
     figure.tight_layout()
     figure.savefig(path_join(results_output, "sonar_vs_tests.pdf"))
-    
+
+    old_escape_rules = T.LATEX_ESCAPE_RULES
+    T.LATEX_ESCAPE_RULES = {'%': '\\%'}
     table = tabulate(
         [
             (
@@ -573,7 +575,7 @@ def reports(results_input, results_output):
             for feature in features
             for df_tmp in (df_with_tests, df_without_tests)
         ],
-        headers=['$N$', '$Md$', '$\\bar{x}', '$s$', '$X \sim N$'],
+        headers=['$N$', '$Md$', '$\\bar{x}$', '$s$', '$X \sim N$'],
         showindex=[
             "{} in {}".format(metric, population)
             for metric in names
@@ -581,11 +583,9 @@ def reports(results_input, results_output):
         ],
         tablefmt='latex',
     )
-    old_escape_rules = T.LATEX_ESCAPE_RULES
-    T.LATEX_ESCAPE_RULES = {'%': '\\%'}
+    T.LATEX_ESCAPE_RULES = old_escape_rules
     with open(path_join(results_output, "sonar_metrics.tex"), 'w') as f:
         f.write(table)
-    T.LATEX_ESCAPE_RULES = old_escape_rules
     
     # ------------------------------------------------- #
 
