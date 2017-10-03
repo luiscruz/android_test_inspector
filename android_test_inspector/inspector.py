@@ -4,6 +4,8 @@ import os
 import fnmatch
 import re
 import abc
+import json
+import urllib.request, urllib.error
 
 # pylint: disable=too-few-public-methods
 # pylint: disable=invalid-name
@@ -48,7 +50,7 @@ class Inspector(object):
     __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
-    def check(self, root_dir):
+    def check(self, root_dir, username=None, project=None):
         """Abstract method to check whether given project uses this test suite."""
         return
 
@@ -58,7 +60,7 @@ class InspectorRegex(Inspector):
         self.files_pattern = files_pattern
         self.framework_pattern = framework_pattern
 
-    def check(self, root_dir):
+    def check(self, root_dir, username=None, project=None):
         """Check whether given project uses this test suite."""
         for dirpath, _, files in os.walk(root_dir):
             for file_matched in fnmatch.filter(files, self.files_pattern):
@@ -82,14 +84,34 @@ class InspectorRegex(Inspector):
                     continue
         return False
 
+class InspectorAPI(Inspector):
+    """Inspector to combine multiple inspectors."""
+    def __init__(self, url_formatter, key):
+        self.url_formatter = url_formatter
+        self.key = key
+
+    def check(self, root_dir, username=None, project=None):
+        """Check whether given project uses this test suite."""
+        if username and project:
+            request_url = self.url_formatter.format(username=username, project=project)
+            try:
+                with urllib.request.urlopen(request_url) as url_open:
+                    data = json.loads(url_open.read().decode())
+                    return data.get(self.key) is not None
+            except urllib.error.HTTPError:
+                return None
+            except:
+                print("Weird error with {}/{}".format(username, project))
+        return None
+
 class InspectorComposer(Inspector):
     """Inspector to combine multiple inspectors."""
     def __init__(self, *inspectors):
         self.inspectors = inspectors
 
-    def check(self, root_dir):
+    def check(self, root_dir, username=None, project=None):
         """Check whether given project uses this test suite."""
-        return any(inspector.check(root_dir) for inspector in self.inspectors)
+        return any(inspector.check(root_dir, username, project) for inspector in self.inspectors)
 
 #UI Automation frameworks
 inspector_androidviewclient = InspectorComposer(
@@ -140,13 +162,26 @@ inspector_bitbar = InspectorComposer(
 )
 # Unit test frameworks
 inspector_junit = InspectorRegex("*gradle*", "junit:junit")
-inspector_androidjunitrunner = InspectorRegex("*gradle*", "android.support.test.runner.AndroidJUnitRunner")
+inspector_androidjunitrunner = InspectorRegex(
+    "*gradle*",
+    "android.support.test.runner.AndroidJUnitRunner"
+)
 inspector_roboelectric = InspectorRegex("*gradle*", "org.robolectric:robolectric")
 inspector_robospock = InspectorRegex("*gradle*", "org.robospock:robospock")
+#CI/CD tools
 inspector_travis = InspectorRegex("*travis.yml", "")
 inspector_circleci = InspectorRegex("*circle.yml", "")
 inspector_codeship = InspectorRegex("*codeship*.yml", "")
 inspector_codefresh = InspectorRegex("*codefresh.yml", "")
+inspector_gocd = InspectorRegex("cruise-config.xml", "")
+inspector_wercker = InspectorAPI(
+    "https://app.wercker.com/api/v3/applications/{username}/{project}",
+    "id"
+)
+inspector_appveyor = InspectorAPI(
+    "https://ci.appveyor.com/api/projects/{username}/{project}",
+    "project"
+)
 
 INSPECTORS = {
     "androidviewclient": inspector_androidviewclient,
@@ -170,10 +205,12 @@ INSPECTORS = {
     'codeship': inspector_codeship,
     # teamcity: does not store conf files in the repo
     # jenkins: does not store conf files in the repo
-    # go cd: does not store conf files in the repo
+    'go_cd': inspector_gocd,
     # bamboo: does not store conf files in the repo
     # gitlab: requires gitlab project
     'codefresh': inspector_codefresh,
+    'wercker': inspector_wercker,
+    'app_veyor': inspector_appveyor,
     #unit test frameworks
     "junit": inspector_junit,
     "androidjunitrunner": inspector_androidjunitrunner,
