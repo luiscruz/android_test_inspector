@@ -95,13 +95,16 @@ class InspectorAPI(Inspector):
         if username and project:
             request_url = self.url_formatter.format(username=username, project=project)
             try:
+                print( "checking {}".format(request_url))
                 with urllib.request.urlopen(request_url) as url_open:
                     data = json.loads(url_open.read().decode())
                     return data.get(self.key) is not None
-            except urllib.error.HTTPError:
-                return None
+            except urllib.error.HTTPError as err:
+                if err.code == 404:
+                    return False
             except:
-                print("Weird error with {}/{}".format(username, project))
+                pass
+        print("Weird error with {}/{}".format(username, project))
         return None
 
 class InspectorComposer(Inspector):
@@ -173,7 +176,6 @@ inspector_travis = InspectorRegex("*travis.yml", "")
 inspector_circleci = InspectorRegex("*circle.yml", "")
 inspector_codeship = InspectorRegex("*codeship*.yml", "")
 inspector_codefresh = InspectorRegex("*codefresh.yml", "")
-inspector_gocd = InspectorRegex("cruise-config.xml", "")
 inspector_wercker = InspectorAPI(
     "https://app.wercker.com/api/v3/applications/{username}/{project}",
     "id"
@@ -205,7 +207,7 @@ INSPECTORS = {
     'codeship': inspector_codeship,
     # teamcity: does not store conf files in the repo
     # jenkins: does not store conf files in the repo
-    'go_cd': inspector_gocd,
+    # go_cd: hosted in private servers
     # bamboo: does not store conf files in the repo
     # gitlab: requires gitlab project
     'codefresh': inspector_codefresh,
@@ -217,3 +219,7 @@ INSPECTORS = {
     "roboelectric": inspector_roboelectric,
     "robospock": inspector_robospock,
 }
+
+if __name__ == '__main__':
+    print(inspector_codefresh.check('', 'brarcher', 'loyalty-card-locker'))
+    print("ok")

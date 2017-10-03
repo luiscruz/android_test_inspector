@@ -62,7 +62,7 @@ if __name__ == "__main__":
     #                 csv_writer.writerow(row)
 
     #DELETE ME
-    ci_inspectors = {tool: INSPECTORS[tool] for tool in {'wercker', 'app_veyor', 'go_cd'}}
+    ci_inspectors = {tool: INSPECTORS[tool] for tool in {'wercker', 'app_veyor'}}
     import pandas
     df = pandas.read_csv(COVERAGE_RESULTS_CSV)
     df_new = pandas.DataFrame()
@@ -70,6 +70,8 @@ if __name__ == "__main__":
         project_results = analyze_project(
             row['github_link'],
             "./tmp/{user}_{project_name}".format(**row),
+            row['user'],
+            row['project_name'],
             inspectors=ci_inspectors
         )
         for tool, result in project_results.items():

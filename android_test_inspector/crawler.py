@@ -26,13 +26,13 @@ def _gitclone(repo_link, clone_dir):
             click.secho('Failed cloning {}.'.format(repo_link), fg='red', err=True)
         return None
 
-def analyze_project(repo_link, clone_dir, inspectors = INSPECTORS, use_local_files=True, keep_files=True):
+def analyze_project(repo_link, clone_dir, username, project, inspectors = INSPECTORS, use_local_files=True, keep_files=True):
     """Analyze project given its git url."""
     repo = _gitclone(repo_link, clone_dir)
     if repo or use_local_files:
         try:
             return {
-                inspector_name: inspector.check(clone_dir)
+                inspector_name: inspector.check(clone_dir, username, project)
                 for (inspector_name, inspector) in inspectors.items()
             }
         finally:
