@@ -419,7 +419,7 @@ def reports(results_input, results_output):
     y_without_tests = tuple(df_without_tests[df_without_tests['rating_count']>i]['rating_value'].mean() for i in x)
 
     figure, ax = plt.subplots()
-    ax.scatter(x, y_with_tests, marker='.', color='C0', label="With tests", zorder=2)
+    ax.scatter(x, y_with_tests, marker='o', color='C0', label="With tests", zorder=2)
     ax.plot(x, y_with_tests, alpha=0.5, color='C0', zorder=1)
     ax.scatter(x, y_without_tests, marker='2', color='r', label="Without tests", zorder=2)
     ax.plot(x, y_without_tests, alpha=0.5, color='r', zorder=1)
@@ -561,26 +561,28 @@ def reports(results_input, results_output):
     figure.tight_layout()
     figure.savefig(path_join(results_output, "sonar_vs_tests.pdf"))
 
+    from itertools import chain
+    issues_column = list(chain.from_iterable([("\multirow{{2}}{{*}}{{{}}}".format(name), ' ') for name in names]))
+    print('=======')
+    print (issues_column)
+    print('=======')
     old_escape_rules = T.LATEX_ESCAPE_RULES
     T.LATEX_ESCAPE_RULES = {'%': '\\%'}
     table = tabulate(
         [
             (
+                sample_name,
                 df_tmp[feature].dropna().count(),
-                df_tmp[feature].dropna().median(),
-                df_tmp[feature].dropna().mean(),
-                df_tmp[feature].dropna().std(),
-                shapiro(df_tmp[feature].dropna())[1],
+                "${:.2f}$".format(df_tmp[feature].dropna().median()),
+                "${:.2f}$".format(df_tmp[feature].dropna().mean()),
+                "${:.2f}$".format(df_tmp[feature].dropna().std()),
+                shapiro(df_tmp[feature].dropna())[1] < 0.0001 and "$p < 0.0001$",
             )
             for feature in features
-            for df_tmp in (df_with_tests, df_without_tests)
+            for (df_tmp, sample_name) in ((df_with_tests, '$W$'), (df_without_tests, '$WO$'))
         ],
-        headers=['$N$', '$Md$', '$\\bar{x}$', '$s$', '$X \sim N$'],
-        showindex=[
-            "{} in {}".format(metric, population)
-            for metric in names
-            for population in ('$W$', '$WO$')
-        ],
+        headers=['Tests', '$N$', '$Md$', '$\\bar{x}$', '$s$', '$X \sim N$'],
+        showindex=issues_column,
         tablefmt='latex',
     )
     T.LATEX_ESCAPE_RULES = old_escape_rules
