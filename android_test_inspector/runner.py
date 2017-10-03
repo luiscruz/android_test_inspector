@@ -60,45 +60,49 @@ if __name__ == "__main__":
     #                 row['coveralls'] = get_coverage_from_coveralls(row['user'], row['project_name'])
     #                 row['codecov'] = get_coverage_from_codecov(row['user'], row['project_name'])
     #                 csv_writer.writerow(row)
-    
-    #DELETE ME
-    # ci_inspectors = {tool: INSPECTORS[tool] for tool in {'travis', 'circleci', 'codeship', 'codefresh'}}
-    # import pandas
-    # df = pandas.read_csv(COVERAGE_RESULTS_CSV)
-    # df_new = pandas.DataFrame()
-    # for index, row in df.iterrows():
-    #     project_results = analyze_project(row['github_link'], "./tmp/{user}_{project_name}".format(**row), inspectors=ci_inspectors)
-    #     for tool, result in project_results.items():
-    #         df.loc[index,tool] =result
-    # df.to_csv('./results_with_coverage_tmp.csv')
-    
-    #collect information from SONAR
-    
-    fieldnames = ['package', 'issues', 'critical_issues', 'major_issues', 'minor_issues', 'files_processed']
-    if not os.path.isfile(SONAR_RESULTS_CSV):
-        with open(SONAR_RESULTS_CSV, 'w') as csv_output:
-            csv_writer = csv.DictWriter(csv_output, fieldnames=fieldnames)
-            csv_writer.writeheader()
 
-    with open(SONAR_RESULTS_CSV, 'r') as csv_file:
-        csv_reader = csv.DictReader(csv_file)
-        sonar_processed_packages = {row['package'] for row in csv_reader}
-    with open(TOOLS_RESULTS_CSV, 'r') as csv_file:
-        csv_reader = csv.DictReader(csv_file)
-        projects = [
-            (row['app_id'], "./tmp/{user}_{project_name}".format(**row))
-            for row in csv_reader
-        ]
-    click.secho("Processing Sonar")
-    with click.progressbar(projects) as bar:
-        for package, project_path in bar:
-            if package in sonar_processed_packages:
-                print("Skipping {}: already processed.".format(package))
-                continue
-            else:
-                results = run_lint(project_path)
-                if results:
-                    with open(SONAR_RESULTS_CSV, 'a') as csv_output:
-                        csv_writer = csv.DictWriter(csv_output, fieldnames=fieldnames)
-                        results['package'] = package
-                        csv_writer.writerow(results)
+    #DELETE ME
+    ci_inspectors = {tool: INSPECTORS[tool] for tool in {'wercker', 'app_veyor', 'go_cd'}}
+    import pandas
+    df = pandas.read_csv(COVERAGE_RESULTS_CSV)
+    df_new = pandas.DataFrame()
+    for index, row in df.iterrows():
+        project_results = analyze_project(
+            row['github_link'],
+            "./tmp/{user}_{project_name}".format(**row),
+            inspectors=ci_inspectors
+        )
+        for tool, result in project_results.items():
+            df.loc[index, tool] = result
+    df.to_csv('./results_with_coverage_tmp.csv')
+
+    #collect information from SONAR
+
+    # fieldnames = ['package', 'issues', 'critical_issues', 'major_issues', 'minor_issues', 'files_processed']
+    # if not os.path.isfile(SONAR_RESULTS_CSV):
+    #     with open(SONAR_RESULTS_CSV, 'w') as csv_output:
+    #         csv_writer = csv.DictWriter(csv_output, fieldnames=fieldnames)
+    #         csv_writer.writeheader()
+    #
+    # with open(SONAR_RESULTS_CSV, 'r') as csv_file:
+    #     csv_reader = csv.DictReader(csv_file)
+    #     sonar_processed_packages = {row['package'] for row in csv_reader}
+    # with open(TOOLS_RESULTS_CSV, 'r') as csv_file:
+    #     csv_reader = csv.DictReader(csv_file)
+    #     projects = [
+    #         (row['app_id'], "./tmp/{user}_{project_name}".format(**row))
+    #         for row in csv_reader
+    #     ]
+    # click.secho("Processing Sonar")
+    # with click.progressbar(projects) as bar:
+    #     for package, project_path in bar:
+    #         if package in sonar_processed_packages:
+    #             print("Skipping {}: already processed.".format(package))
+    #             continue
+    #         else:
+    #             results = run_lint(project_path)
+    #             if results:
+    #                 with open(SONAR_RESULTS_CSV, 'a') as csv_output:
+    #                     csv_writer = csv.DictWriter(csv_output, fieldnames=fieldnames)
+    #                     results['package'] = package
+    #                     csv_writer.writerow(results)
