@@ -102,7 +102,9 @@ class InspectorAPI(Inspector):
             except urllib.error.HTTPError as err:
                 if err.code == 404:
                     return False
-            except:
+                print (err)
+            except Exception as e:
+                print (e)
                 pass
         print("Weird error with {}/{}".format(username, project))
         return None
@@ -221,5 +223,5 @@ INSPECTORS = {
 }
 
 if __name__ == '__main__':
-    print(inspector_codefresh.check('', 'brarcher', 'loyalty-card-locker'))
+    print(inspector_wercker.check('', 'vi', 'redscreen.apk'))
     print("ok")

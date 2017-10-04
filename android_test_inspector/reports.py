@@ -47,8 +47,10 @@ unit_test_frameworks = [
 ci_services = [
     'travis',
     'circleci',
+    'app_veyor',
     'codeship',
     'codefresh',
+    'wercker',
 ]
 
 downloads_scale = [
@@ -449,7 +451,7 @@ def reports(results_input, results_output):
     ax.spines['left'].set_visible(False)
     ax.yaxis.grid(linestyle='dotted', color='gray')
     ax.set_ylabel("Number of apps", fontsize=17)
-    ax.set_xticklabels(["All"]+[namepedia.get(key, key.title()) for key in ci_services])
+    ax.set_xticklabels(["All"]+[namepedia.get(key, key.title().replace('_', ' ')) for key in ci_services])
     
     ax2 = ax.twinx()
     ax2.grid(False)
@@ -563,9 +565,6 @@ def reports(results_input, results_output):
 
     from itertools import chain
     issues_column = list(chain.from_iterable([("\multirow{{2}}{{*}}{{{}}}".format(name), ' ') for name in names]))
-    print('=======')
-    print (issues_column)
-    print('=======')
     old_escape_rules = T.LATEX_ESCAPE_RULES
     T.LATEX_ESCAPE_RULES = {'%': '\\%'}
     table = tabulate(
@@ -588,7 +587,6 @@ def reports(results_input, results_output):
     T.LATEX_ESCAPE_RULES = old_escape_rules
     with open(path_join(results_output, "sonar_metrics.tex"), 'w') as f:
         f.write(table)
-    
     # ------------------------------------------------- #
 
 
