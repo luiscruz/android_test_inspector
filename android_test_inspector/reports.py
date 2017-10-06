@@ -386,6 +386,7 @@ def reports(results_input, results_output):
 
     def analyze_populations(a,b, continuous=True):
         mean_difference = np.mean(b) - np.mean(a)
+        improvement = mean_difference/np.mean(a)
         ks_test, ks_p = ks_2samp(a,b)
         mwu_test, mwu_p = mannwhitneyu(a,b, alternative='two-sided')
         
@@ -395,12 +396,14 @@ def reports(results_input, results_output):
             'Test': continuous and "${:,.0f}$".format(ks_test) or "${:,.0f}$".format(mwu_test),
             '$p$-value': continuous and "${:.4f}$".format(ks_p) or "${:.4f}$".format(mwu_p),
             '$\\Delta\\bar{x}$': "${:,.2f}$".format(mean_difference),
+            '$d_r$': "${:.1%}$".format(improvement),
         }
     tests = [analyze_populations(df_without_tests[metric].dropna(), df_with_tests[metric].dropna(), False) for metric in popularity_metrics]
     keys = [
         'Test',
-        '$\mu$-value',
-        'mean difference',
+        '$p$-value',
+        '$\\Delta\\bar{x}$',
+        '$d_r$',
     ]
     old_escape_rules = T.LATEX_ESCAPE_RULES
     T.LATEX_ESCAPE_RULES = {'%': '\\%'}
