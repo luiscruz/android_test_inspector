@@ -348,11 +348,11 @@ def reports(results_input, results_output):
     downloads_distribution.plot.bar(
         ax=ax,
         width=0.9,
-        fontsize=17,
+        fontsize=14,
     )
-    ax.set_xticklabels(labels, fontsize=17, rotation='vertical')
-    ax.set_xlabel("Downloads", fontsize=18)
-    ax.set_ylabel("Number of apps", fontsize=18)
+    ax.set_xticklabels(labels, fontsize=14, rotation='vertical')
+    ax.set_xlabel("Downloads", fontsize=15)
+    ax.set_ylabel("Number of apps", fontsize=15)
     ax.spines['right'].set_visible(False)
     ax.spines['top'].set_visible(False)
     ax.spines['left'].set_visible(False)
@@ -362,11 +362,11 @@ def reports(results_input, results_output):
     ax2 = ax.twinx()
     ax2.grid(False)
     ax2.set_ylim(ax.get_ylim())
-    ax2.set_yticklabels(["{:.0%}".format(tick/len(df_with_google_data)) for tick in ax2.get_yticks()], fontsize=17)
+    ax2.set_yticklabels(["{:.0%}".format(tick/len(df_with_google_data)) for tick in ax2.get_yticks()], fontsize=14)
     ax2.spines['right'].set_visible(False)
     ax2.spines['top'].set_visible(False)
     ax2.spines['left'].set_visible(False)
-    ax2.set_ylabel("Percentage of apps", fontsize=18)
+    ax2.set_ylabel("Percentage of apps", fontsize=15)
 
 
     figure.tight_layout()
@@ -447,26 +447,26 @@ def reports(results_input, results_output):
         "travis": "Travis CI",
     }
     df[['ci/cd']+ci_services].sum().plot.bar(
-        fontsize=17, edgecolor = 'k', linewidth = [1]+[0]*len(ci_services)
+        fontsize=15, edgecolor = 'k', linewidth = [1]+[0]*len(ci_services)
     )
     ax.spines['right'].set_visible(False)
     ax.spines['top'].set_visible(False)
     ax.spines['left'].set_visible(False)
     ax.yaxis.grid(linestyle='dotted', color='gray')
-    ax.set_ylabel("Number of apps", fontsize=17)
+    ax.set_ylabel("Number of apps", fontsize=15)
     ax.set_xticklabels(["All"]+[namepedia.get(key, key.title().replace('_', ' ')) for key in ci_services])
     
     ax2 = ax.twinx()
     ax2.grid(False)
     ax2.set_ylim(ax.get_ylim())
-    ax2.set_yticklabels(["{:.0%}".format(tick/len(df)) for tick in ax2.get_yticks()], fontsize=17)
+    ax2.set_yticklabels(["{:.0%}".format(tick/len(df)) for tick in ax2.get_yticks()], fontsize=15)
     ax2.spines['right'].set_visible(False)
     ax2.spines['top'].set_visible(False)
     ax2.spines['left'].set_visible(False)
-    ax2.set_ylabel("Percentage of apps", fontsize=17)
+    ax2.set_ylabel("Percentage of apps", fontsize=15)
     
     for p in ax.patches:
-        ax.annotate("{:.0f}".format(p.get_height()), (p.get_x() +p.get_width()/2, p.get_height()+4), ha='center', fontsize=15)
+        ax.annotate("{:.0f}".format(p.get_height()), (p.get_x() +p.get_width()/2, p.get_height()+4), ha='center', fontsize=14)
     figure.tight_layout()
     figure.savefig(path_join(results_output, "ci_cd_hist.pdf"))
     # ------------------------------------------------------- #
@@ -591,6 +591,24 @@ def reports(results_input, results_output):
     with open(path_join(results_output, "sonar_metrics.tex"), 'w') as f:
         f.write(table)
     # ------------------------------------------------- #
+
+
+    ###############
+    # Hall of Fame
+    ###############
+    hall_of_fame = df[df[['ci/cd', 'unit_tests', 'ui_tests']].all(axis=1)].sort_values('stars', ascending=False)
+    categories = hall_of_fame['category'].unique()
+    small_hall_of_fame = [hall_of_fame[hall_of_fame['category']==category].iloc[0][['user', 'project_name', 'stars']] for category in categories ]
+    small_hall_of_fame_table = tabulate(
+        small_hall_of_fame,
+        headers=['Category', 'Organization', 'Project Name', 'Stars'],
+        showindex=list(categories),
+        tablefmt='latex',
+    )
+    with open(path_join(results_output, "small_hall_of_fame.tex"), 'w') as f:
+        f.write(small_hall_of_fame_table)
+    #############
+
 
 
 def exit_gracefully(start_time):
