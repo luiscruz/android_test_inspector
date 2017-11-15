@@ -8,3 +8,4 @@ friendly-sonar
 tabulate
 scipy
 statsmodels
+timeout-decorator

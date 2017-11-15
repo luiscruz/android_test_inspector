@@ -114,6 +114,7 @@ def reports(results_input, results_output):
     df_old = df[df['age_numeric']>=2]
     df["downloads"] = df["downloads"].astype("category", categories=downloads_scale, ordered=True)
     df['sonar_issues_ratio'] = df['sonar_issues'].divide(df['sonar_files_processed'])
+    df['sonar_blocker_issues_ratio'] = df['sonar_blocker_issues'].divide(df['sonar_files_processed'])
     df['sonar_critical_issues_ratio'] = df['sonar_critical_issues'].divide(df['sonar_files_processed'])
     df['sonar_major_issues_ratio'] = df['sonar_major_issues'].divide(df['sonar_files_processed'])
     df['sonar_minor_issues_ratio'] = df['sonar_minor_issues'].divide(df['sonar_files_processed'])
@@ -474,11 +475,18 @@ def reports(results_input, results_output):
     # ------------------ Sonar vs tests --------------- #
     features = [
         'sonar_issues_ratio',
+        'sonar_blocker_issues_ratio',
         'sonar_critical_issues_ratio',
         'sonar_major_issues_ratio',
         'sonar_minor_issues_ratio'
     ]
-    names = ['Any', 'Critical', 'Major', 'Minor']
+    names = [
+        'Any',
+        'Blocker',
+        'Critical',
+        'Major',
+        'Minor'
+    ]
     options = {
         'sym':       '',
         'meanline':  True,
@@ -496,7 +504,7 @@ def reports(results_input, results_output):
         labels=(
             'With Tests',
             'Without Tests'
-        )*4,
+        )*len(features),
         **options
     )
     
@@ -521,7 +529,7 @@ def reports(results_input, results_output):
 
     ax.yaxis.grid(linestyle='dotted', color='gray')
     ax.set_xticklabels(names)
-    xticks = np.arange(1.5, 4*2+0.5, 2)
+    xticks = np.arange(1.5, len(features)*2+0.5, 2)
     ax.set_xticks(xticks)
     ax.set_ylabel('Number of issues per file')
     ax.set_xlabel('Severity of issues')
@@ -541,8 +549,10 @@ def reports(results_input, results_output):
         df_with_tests[feature].dropna().median()
         for feature in features
     ]
+    tester = ks_2samp
+    # tester = mannwhitneyu
     pvalues = [
-        ks_2samp(df_without_tests[feature].dropna().values,
+        tester(df_without_tests[feature].dropna().values,
         df_with_tests[feature].dropna().values, ).pvalue
         for feature in features
     ]
@@ -608,6 +618,25 @@ def reports(results_input, results_output):
     with open(path_join(results_output, "small_hall_of_fame.tex"), 'w') as f:
         f.write(small_hall_of_fame_table)
     #############
+    
+    #### Categories ######
+    
+    df[['app_id','category']].groupby('category').count().plot.bar()
+    ax = df[['app_id','category']].groupby('category').count().plot.bar()
+    for p in ax.patches:
+        ax.annotate("{:.0f}".format(p.get_height()), (p.get_x() +p.get_width()/2, p.get_height()+4), ha='center', fontsize=10)
+    ax.legend().remove()
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+    ax.yaxis.grid(linestyle='dotted', color='gray')
+    ax.set_xlabel('Category')
+    ax.set_ylabel('Number of Apps')
+    
+    figure = plt.gcf()
+    figure.tight_layout()
+    figure.savefig(path_join(results_output, "categories.pdf"))
+    ######################
 
 
 
