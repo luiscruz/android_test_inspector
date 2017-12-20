@@ -1,0 +1,10 @@
+Osmand
+minetest
+dolphin
+freeminer
+ppsspp
+k-9
+NewPipe
+Silence
+Anki-Android
+ingress-intel-total-conversion
