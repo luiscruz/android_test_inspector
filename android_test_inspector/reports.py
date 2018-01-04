@@ -608,10 +608,10 @@ def reports(results_input, results_output):
     ###############
     hall_of_fame = df[df[['ci/cd', 'unit_tests', 'ui_tests']].all(axis=1)].sort_values('stars', ascending=False)
     categories = hall_of_fame['category'].unique()
-    small_hall_of_fame = [hall_of_fame[hall_of_fame['category']==category].iloc[0][['user', 'project_name', 'stars']] for category in categories ]
+    small_hall_of_fame = [hall_of_fame[hall_of_fame['category']==category].iloc[0][['user', 'project_name']] for category in categories ]
     small_hall_of_fame_table = tabulate(
         small_hall_of_fame,
-        headers=['Category', 'Organization', 'Project Name', 'Stars'],
+        headers=['Category', 'Organization', 'Project Name'],
         showindex=list(categories),
         tablefmt='latex',
     )
