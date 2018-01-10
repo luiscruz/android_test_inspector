@@ -313,13 +313,28 @@ def reports(results_input, results_output):
     }
     metrics = ['stars','forks', 'contributors', 'commits', 'rating_value', 'rating_count']
 
+    
+    def outliers_modified_z_score(ys):
+        threshold = 3.5
+
+        median_y = np.median(ys)
+        median_absolute_deviation_y = np.median([np.abs(y - median_y) for y in ys])
+        modified_z_scores = [0.6745 * (y - median_y) / median_absolute_deviation_y
+                             for y in ys]
+        return (np.abs(modified_z_scores) > threshold)
+    
+    def outliers_z_score(ys):
+        return np.abs(zscore(ys) < 3)
+
     def remove_outliers_df(df, metric):
         df = df.dropna(subset=[metric])
-        return df[np.abs(zscore(df[metric]) < 3)]
+        return df[outliers_z_score(df[metric])]
+    
         
     def remove_outliers(series):
         series = series[~series.isnull()]
-        return series[np.abs(zscore(series) < 3)]
+        return series[outliers_z_score(series)]
+        # return series[np.abs(zscore(series) < 3)]
     
     stats = pandas.concat([remove_outliers(df[metric]).describe() for metric in metrics], axis=1)
     
@@ -397,9 +412,15 @@ def reports(results_input, results_output):
         # 'downloads'
     ]
 
+    def cohen_d(y,x):
+        nx = len(x)
+        ny = len(y)
+        dof = nx + ny - 2
+        return (np.mean(x) - np.mean(y)) / np.sqrt(((nx-1)*np.std(x, ddof=1) ** 2 + (ny-1)*np.std(y, ddof=1) ** 2) / dof)
+
     def analyze_populations(a,b, continuous=True):
         mean_difference = np.mean(b) - np.mean(a)
-        improvement = mean_difference/np.mean(a)
+        improvement = mean_difference/np.mean(b)
         ks_test, ks_p = ks_2samp(a,b)
         mwu_test, mwu_p = mannwhitneyu(a,b, alternative='two-sided')
         
@@ -409,6 +430,7 @@ def reports(results_input, results_output):
             'Test': continuous and "${:,.0f}$".format(ks_test) or "${:,.0f}$".format(mwu_test),
             '$p$-value': continuous and "${:.4f}$".format(ks_p) or "${:.4f}$".format(mwu_p),
             '$\\Delta\\bar{x}$': "${:,.2f}$".format(mean_difference),
+            'Cohen\'s $d$': cohen_d(a,b),
             '$d_r$': "${:.1%}$".format(improvement),
         }
         
@@ -423,18 +445,12 @@ def reports(results_input, results_output):
             )
         )
 
-    keys = [
-        'Test',
-        '$p$-value',
-        '$\\Delta\\bar{x}$',
-        '$d_r$',
-    ]
     old_escape_rules = T.LATEX_ESCAPE_RULES
     T.LATEX_ESCAPE_RULES = {'%': '\\%'}
     with open(path_join(results_output, "popularity_metrics_test.tex"), 'w') as f:
         f.write(tabulate(
             tests,
-            headers="keys",
+            headers='keys',
             showindex=[metric.title().replace("_"," ") for metric in popularity_metrics],
             tablefmt='latex',
 
