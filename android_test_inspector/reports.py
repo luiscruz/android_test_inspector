@@ -16,6 +16,7 @@ import tabulate as T
 from scipy.stats import mannwhitneyu
 from scipy.stats import ks_2samp
 from scipy.stats import shapiro
+from scipy.stats import zscore
 
 ui_automation_frameworks = [
     "androidviewclient",
@@ -310,7 +311,18 @@ def reports(results_input, results_output):
         "max": "$max$",
         "rating_value": "Rating"
     }
-    stats = df[['stars','forks', 'contributors', 'commits', 'rating_value', 'rating_count', 'downloads']].describe()
+    metrics = ['stars','forks', 'contributors', 'commits', 'rating_value', 'rating_count']
+
+    def remove_outliers_df(df, metric):
+        df = df.dropna(subset=[metric])
+        return df[np.abs(zscore(df[metric]) < 3)]
+        
+    def remove_outliers(series):
+        series = series[~series.isnull()]
+        return series[np.abs(zscore(series) < 3)]
+    
+    stats = pandas.concat([remove_outliers(df[metric]).describe() for metric in metrics], axis=1)
+    
     stats = stats.applymap((lambda x: "${:.1f}$".format(float(x)))).astype(str)
     stats[['stars','forks', 'contributors', 'commits', 'rating_count']] = stats[['stars','forks', 'contributors', 'commits', 'rating_count']].applymap((lambda x: "${:.0f}$".format(float(x[1:-1])))).astype(str)
     stats.loc['count']= stats.loc['count'].map((lambda x: "${:.0f}$".format(float(x[1:-1])))).astype(str)
@@ -399,7 +411,18 @@ def reports(results_input, results_output):
             '$\\Delta\\bar{x}$': "${:,.2f}$".format(mean_difference),
             '$d_r$': "${:.1%}$".format(improvement),
         }
-    tests = [analyze_populations(df_without_tests[metric].dropna(), df_with_tests[metric].dropna(), False) for metric in popularity_metrics]
+        
+    tests = []
+    for metric in popularity_metrics:
+        df_wo_outliers = remove_outliers_df(df, metric)
+        tests.append(
+            analyze_populations(
+                df_wo_outliers[~df_wo_outliers['tests']][metric],
+                df_wo_outliers[df_wo_outliers['tests']][metric],
+                False
+            )
+        )
+
     keys = [
         'Test',
         '$p$-value',
