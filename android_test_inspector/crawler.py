@@ -164,14 +164,11 @@ def get_coverage_from_codecov(user, repo):
         print("Codecov coverage not found for {}/{}".format(user,repo))
     except:
         print("Weird error with {}/{}".format(user,repo))
-    return None    
+    return None
 
-if __name__ == "__main__":
-    coverage = get_coverage_from_coveralls("lemurheavy","coveralls-ruby")
-    print(coverage)
-    coverage = get_coverage_from_codecov("fossasia","open-event-webapp")
-    print(coverage)
-    coverage = get_coverage_from_codecov("SimpleMobileTools","Simple-Gallery")
-    print(coverage)
-
-    
+# if __name__ == "__main__":
+    # username, project = 'rnauber', 'pipepanic-android'
+    # print(get_github_info(username, project))
+    # import pdb; pdb.set_trace()
+    # repo = github.get_user(username).get_repo(project)
+    # n_contributors = len(list(repo.get_contributors()))
