@@ -87,7 +87,7 @@ def human_format(number):
 @click.option('-i','--results_input', default=".", type=click.Path(exists=True))
 @click.option('-o','--results_output', default="./reports", type=click.Path(exists=True))
 def reports(results_input, results_output):
-    """Generate reports for ICST2018 paper."""
+    """Generate reports for EMSE paper."""
     now = pandas.Timestamp(datetime.now())
     df = pandas.read_csv(
         path_join(results_input, "results_with_coverage.csv"),
