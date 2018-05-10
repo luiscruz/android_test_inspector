@@ -106,3 +106,5 @@ ENV/
 /config.json
 #experimental tmp data
 /tmp
+
+.vscode/

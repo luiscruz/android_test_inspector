@@ -17,6 +17,7 @@ from scipy.stats import mannwhitneyu
 from scipy.stats import ks_2samp
 from scipy.stats import shapiro
 from scipy.stats import zscore
+from statsmodels.sandbox.stats.multicomp import multipletests
 
 ui_automation_frameworks = [
     "androidviewclient",
@@ -428,7 +429,7 @@ def reports(results_input, results_output):
             # 'MW': "${:.4f}$".format(mwu_p),
             # 'KS': continuous and "${:.4f}$".format(ks_p) or "n.a.",
             'Test': continuous and "${:,.0f}$".format(ks_test) or "${:,.0f}$".format(mwu_test),
-            '$p$-value': continuous and "${:.4f}$".format(ks_p) or "${:.4f}$".format(mwu_p),
+            '$p$-value': continuous and ks_p or mwu_p,
             '$\\Delta\\bar{x}$': "${:,.2f}$".format(mean_difference),
             'Cohen\'s $d$': cohen_d(a,b),
             '$d_r$': "${:.1%}$".format(improvement),
@@ -444,7 +445,14 @@ def reports(results_input, results_output):
                 False
             )
         )
+    
+    # Apply multiple test correction ()
+    pvalues = [test['$p$-value'] for test in tests]
+    _,pvalues,*_ = multipletests(pvalues, alpha=0.05, method='fdr_bh')
+    for test, pvalue in zip(tests, pvalues):
+        test['$p$-value'] = "${:.4f}$".format(pvalue)
 
+    
     old_escape_rules = T.LATEX_ESCAPE_RULES
     T.LATEX_ESCAPE_RULES = {'%': '\\%'}
     with open(path_join(results_output, "popularity_metrics_test.tex"), 'w') as f:
@@ -595,6 +603,9 @@ def reports(results_input, results_output):
         df_with_tests[feature].dropna().values, ).pvalue
         for feature in features
     ]
+    #multiple test correction ()
+    _,pvalues,*_ = multipletests(pvalues, alpha=0.05, method='fdr_bh')
+    
     bbox_props = dict(boxstyle="round,pad=0.3", fc=(1,1,1,0.8), ec='lightgray', lw=0.5)
     for name, x, mean_difference, median_difference, pvalue in zip(names, xticks, mean_differences, median_differences, pvalues):
         ax.annotate(
