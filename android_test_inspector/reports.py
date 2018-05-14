@@ -16,6 +16,7 @@ import tabulate as T
 from scipy.stats import mannwhitneyu
 from scipy.stats import ks_2samp
 from scipy.stats import shapiro
+from scipy.stats import ttest_ind
 from scipy.stats import zscore
 from statsmodels.sandbox.stats.multicomp import multipletests
 
@@ -521,14 +522,14 @@ def reports(results_input, results_output):
 
     # ------------------ Sonar vs tests --------------- #
     features = [
-        'sonar_issues_ratio',
+        # 'sonar_issues_ratio',
         'sonar_blocker_issues_ratio',
         'sonar_critical_issues_ratio',
         'sonar_major_issues_ratio',
         'sonar_minor_issues_ratio'
     ]
     names = [
-        'Any',
+        # 'Any',
         'Blocker',
         'Critical',
         'Major',
@@ -597,24 +598,34 @@ def reports(results_input, results_output):
         for feature in features
     ]
     tester = ks_2samp
-    # tester = mannwhitneyu
+    tester = mannwhitneyu
+    # tester = ttest_ind
     pvalues = [
-        tester(df_without_tests[feature].dropna().values,
-        df_with_tests[feature].dropna().values, ).pvalue
+        tester(
+            df_without_tests[feature].dropna().values,
+            df_with_tests[feature].dropna().values,
+            # alternative="two-sided"
+            # equal_var=False,
+        ).pvalue
         for feature in features
     ]
     #multiple test correction ()
     _,pvalues,*_ = multipletests(pvalues, alpha=0.05, method='fdr_bh')
     
-    bbox_props = dict(boxstyle="round,pad=0.3", fc=(1,1,1,0.8), ec='lightgray', lw=0.5)
+    bbox_props_not_significant = dict(boxstyle="round,pad=0.3", fc=(1,1,1,0.8), ec='lightgray', lw=0.5)
+    bbox_props_significant = dict(boxstyle="round,pad=0.3", fc=(1,1,1,0.8), ec='black', lw=0.5)
     for name, x, mean_difference, median_difference, pvalue in zip(names, xticks, mean_differences, median_differences, pvalues):
+        if pvalue < 0.05:
+            bbox_props = bbox_props_significant
+        else:
+            bbox_props = bbox_props_not_significant
         ax.annotate(
             (
                 r"$\Delta\bar{{x}} = {:.2f}$".format(mean_difference)+"\n"+
                 r"$\Delta Md = {:.2f}$".format(median_difference)+"\n"+
                 r"$p = {:.4f}$".format(pvalue)
             ),
-            (x,4.2),
+            (x,2.5),
             va='top', ha='center',
             fontsize=11,
             bbox=bbox_props
