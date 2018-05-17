@@ -102,7 +102,7 @@ def reports(results_input, results_output):
     df_sonar.fillna(0, inplace=True)
     df_sonar = df_sonar.add_prefix('sonar_')
     df = df.join(df_sonar, on="app_id")
-    
+
     #Feature engineering
     df['tests'] = df[unit_test_frameworks+ui_automation_frameworks+cloud_test_services].any(axis=1)
     df['unit_tests'] = df[unit_test_frameworks].apply(any, axis=1)
@@ -124,6 +124,9 @@ def reports(results_input, results_output):
     df_with_tests = df[df['tests']]
     df_without_tests = df[~df['tests']]
 
+
+    from corr_analysis import generate_corr_table
+    generate_corr_table(df, output_file=path_join(results_output, "corr_matrix.tex"))
 
     colors_dict = {
         'any': 'C0',
@@ -314,7 +317,7 @@ def reports(results_input, results_output):
     }
     metrics = ['stars','forks', 'contributors', 'commits', 'rating_value', 'rating_count']
 
-    
+
     def outliers_modified_z_score(ys):
         threshold = 3.5
 
@@ -323,22 +326,22 @@ def reports(results_input, results_output):
         modified_z_scores = [0.6745 * (y - median_y) / median_absolute_deviation_y
                              for y in ys]
         return (np.abs(modified_z_scores) > threshold)
-    
+
     def outliers_z_score(ys):
         return np.abs(zscore(ys) < 3)
 
     def remove_outliers_df(df, metric):
         df = df.dropna(subset=[metric])
         return df[outliers_z_score(df[metric])]
-    
-        
+
+
     def remove_outliers(series):
         series = series[~series.isnull()]
         return series[outliers_z_score(series)]
         # return series[np.abs(zscore(series) < 3)]
-    
+
     stats = pandas.concat([remove_outliers(df[metric]).describe() for metric in metrics], axis=1)
-    
+
     stats = stats.applymap((lambda x: "${:.1f}$".format(float(x)))).astype(str)
     stats[['stars','forks', 'contributors', 'commits', 'rating_count']] = stats[['stars','forks', 'contributors', 'commits', 'rating_count']].applymap((lambda x: "${:.0f}$".format(float(x[1:-1])))).astype(str)
     stats.loc['count']= stats.loc['count'].map((lambda x: "${:.0f}$".format(float(x[1:-1])))).astype(str)
@@ -424,7 +427,7 @@ def reports(results_input, results_output):
         improvement = mean_difference/np.mean(b)
         ks_test, ks_p = ks_2samp(a,b)
         mwu_test, mwu_p = mannwhitneyu(a,b, alternative='two-sided')
-        
+
         return {
             # 'MW': "${:.4f}$".format(mwu_p),
             # 'KS': continuous and "${:.4f}$".format(ks_p) or "n.a.",
@@ -434,7 +437,7 @@ def reports(results_input, results_output):
             'Cohen\'s $d$': cohen_d(a,b),
             '$d_r$': "${:.1%}$".format(improvement),
         }
-        
+
     tests = []
     for metric in popularity_metrics:
         df_wo_outliers = remove_outliers_df(df, metric)
@@ -445,14 +448,14 @@ def reports(results_input, results_output):
                 False
             )
         )
-    
+
     # Apply multiple test correction ()
     pvalues = [test['$p$-value'] for test in tests]
     _,pvalues,*_ = multipletests(pvalues, alpha=0.05, method='fdr_bh')
     for test, pvalue in zip(tests, pvalues):
         test['$p$-value'] = "${:.4f}$".format(pvalue)
 
-    
+
     old_escape_rules = T.LATEX_ESCAPE_RULES
     T.LATEX_ESCAPE_RULES = {'%': '\\%'}
     with open(path_join(results_output, "popularity_metrics_test.tex"), 'w') as f:
@@ -503,7 +506,7 @@ def reports(results_input, results_output):
     ax.yaxis.grid(linestyle='dotted', color='gray')
     ax.set_ylabel("Number of apps", fontsize=15)
     ax.set_xticklabels(["All"]+[namepedia.get(key, key.title().replace('_', ' ')) for key in ci_services])
-    
+
     ax2 = ax.twinx()
     ax2.grid(False)
     ax2.set_ylim(ax.get_ylim())
@@ -512,7 +515,7 @@ def reports(results_input, results_output):
     ax2.spines['top'].set_visible(False)
     ax2.spines['left'].set_visible(False)
     ax2.set_ylabel("Percentage of apps", fontsize=15)
-    
+
     for p in ax.patches:
         ax.annotate("{:.0f}".format(p.get_height()), (p.get_x() +p.get_width()/2, p.get_height()+4), ha='center', fontsize=14)
     figure.tight_layout()
@@ -540,7 +543,7 @@ def reports(results_input, results_output):
         'showmeans': True,
         'patch_artist': True,
     }
-    
+
     figure, ax = plt.subplots(1,1)
     boxplot = ax.boxplot(
         [
@@ -554,7 +557,7 @@ def reports(results_input, results_output):
         )*len(features),
         **options
     )
-    
+
     colors = (
         'C0',
         'darkred'
@@ -565,7 +568,7 @@ def reports(results_input, results_output):
     for cap, whisker, color in zip(boxplot['caps'], boxplot['whiskers'], np.repeat(colors,2)):
         cap.set_color(color)
         whisker.set_color(color)
-    
+
     # Big hack for legend
     h1, = ax.plot([1,1], colors[0])
     h2, = ax.plot([1,1], colors[1])
@@ -587,12 +590,12 @@ def reports(results_input, results_output):
 
 
     mean_differences = [
-        df_without_tests[feature].dropna().mean() - 
+        df_without_tests[feature].dropna().mean() -
         df_with_tests[feature].dropna().mean()
         for feature in features
     ]
     median_differences = [
-        df_without_tests[feature].dropna().median() - 
+        df_without_tests[feature].dropna().median() -
         df_with_tests[feature].dropna().median()
         for feature in features
     ]
@@ -605,7 +608,7 @@ def reports(results_input, results_output):
     ]
     #multiple test correction ()
     _,pvalues,*_ = multipletests(pvalues, alpha=0.05, method='fdr_bh')
-    
+
     bbox_props = dict(boxstyle="round,pad=0.3", fc=(1,1,1,0.8), ec='lightgray', lw=0.5)
     for name, x, mean_difference, median_difference, pvalue in zip(names, xticks, mean_differences, median_differences, pvalues):
         ax.annotate(
@@ -622,7 +625,7 @@ def reports(results_input, results_output):
     for patch, pvalue in zip(boxplot['boxes'], np.repeat(pvalues,2)):
         if pvalue < 0.05:
             patch.set_facecolor((1.0,1.0,0.8,0.7))
-    
+
     figure.tight_layout()
     figure.savefig(path_join(results_output, "sonar_vs_tests.pdf"))
 
@@ -668,9 +671,9 @@ def reports(results_input, results_output):
     with open(path_join(results_output, "small_hall_of_fame.tex"), 'w') as f:
         f.write(small_hall_of_fame_table)
     #############
-    
+
     #### Categories ######
-    
+
     df[['app_id','category']].groupby('category').count().plot.bar()
     ax = df[['app_id','category']].groupby('category').count().plot.bar()
     for p in ax.patches:
@@ -682,11 +685,12 @@ def reports(results_input, results_output):
     ax.yaxis.grid(linestyle='dotted', color='gray')
     ax.set_xlabel('Category')
     ax.set_ylabel('Number of Apps')
-    
+
     figure = plt.gcf()
     figure.tight_layout()
     figure.savefig(path_join(results_output, "categories.pdf"))
     ######################
+
 
 
 
