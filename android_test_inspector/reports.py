@@ -128,7 +128,6 @@ def reports(results_input, results_output):
 
     from corr_analysis import correlation_matrix
     correlation_matrix(df, output_file=path_join(results_output, "corr_matrix.pdf"))
-    import pdb; pdb.set_trace()
 
     colors_dict = {
         'any': 'C0',
@@ -178,20 +177,20 @@ def reports(results_input, results_output):
     ax.set_xticks(range(len(labels)))
     ax.tick_params(direction='out', top='off')
     # ax.set_title("Number of projects by test framework")
-    ax.set_ylabel("Number of projects")
+    ax.set_ylabel("Number of projects (out of {})".format(len(df.index)))
     ax.spines['right'].set_visible(False)
     ax.spines['top'].set_visible(False)
     ax.spines['left'].set_visible(False)
     ax.yaxis.grid(linestyle='dotted')
 
-    ax2 = ax.twinx()
-    ax2.grid(False)
-    ax2.set_ylim(ax.get_ylim())
-    ax2.set_yticklabels(["{:.0%}".format(tick/len(df)) for tick in ax2.get_yticks()])
-    ax2.spines['right'].set_visible(False)
-    ax2.spines['top'].set_visible(False)
-    ax2.spines['left'].set_visible(False)
-    ax2.set_ylabel("Percentage of projects")
+    # ax2 = ax.twinx()
+    # ax2.grid(False)
+    # ax2.set_ylim(ax.get_ylim())
+    # ax2.set_yticklabels(["{:.0%}".format(tick/len(df)) for tick in ax2.get_yticks()])
+    # ax2.spines['right'].set_visible(False)
+    # ax2.spines['top'].set_visible(False)
+    # ax2.spines['left'].set_visible(False)
+    # ax2.set_ylabel("Percentage of projects")
 
     def draw_range(ax, xmin, xmax, label):
         y=400
