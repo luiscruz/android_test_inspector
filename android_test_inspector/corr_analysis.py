@@ -1,6 +1,3 @@
-from os.path import join as path_join
-
-import click
 import matplotlib
 matplotlib.rcParams['font.family'] = 'serif'
 matplotlib.rcParams['mathtext.fontset'] = 'cm'
@@ -8,8 +5,7 @@ import matplotlib.pyplot as plt
 
 import pandas
 import numpy as np
-from tabulate import tabulate
-import tabulate as T
+from biokit.viz import corrplot
 
 FEATURES = [
     'stars',
@@ -23,20 +19,20 @@ FEATURES = [
     'sonar_critical_issues_ratio',
     'sonar_major_issues_ratio',
     'sonar_minor_issues_ratio',
-    "age",
+    "age_numeric",
     "sonar_files_processed",
     "ci/cd",
-    'tests',
+    "tests",
 ]
 
-def correlation_matrix(df):
+def correlation_matrix_II(df):
     from matplotlib import pyplot as plt
     from matplotlib import cm as cm
 
     fig = plt.figure()
     ax1 = fig.add_subplot(111)
     cmap = cm.get_cmap('jet', 30)
-    cax = ax1.imshow(df.corr(), interpolation="nearest", cmap=cmap)
+    cax = ax1.imshow(df.corr(method="spearman"), interpolation="nearest", cmap=cmap)
     ax1.grid(True)
     ax1.set_title('Abalone Feature Correlation')
     labels=FEATURES
@@ -55,32 +51,20 @@ def fancy_corr_table(df: pandas.DataFrame, output_file, features=FEATURES):
     with open(output_file, 'w') as f:
         f.write(table)
 
-def generate_corr_table(df, output_file, features=FEATURES):
-    # print(df[FEATURES].corr())
-    # correlation_matrix(df[FEATURES])
-    fancy_corr_table(df, output_file)
-
-
-# old_escape_rules = T.LATEX_ESCAPE_RULES
-# T.LATEX_ESCAPE_RULES = {'%': '\\%'}
-# table = tabulate(
-#     [
-#         (
-#             sample_name,
-#             df_tmp[feature].dropna().count(),
-#             "${:.2f}$".format(df_tmp[feature].dropna().median()),
-#             "${:.2f}$".format(df_tmp[feature].dropna().mean()),
-#             "${:.2f}$".format(df_tmp[feature].dropna().std()),
-#             shapiro(df_tmp[feature].dropna())[1] < 0.0001 and "$p < 0.0001$",
-#         )
-#         for feature in features
-#         for (df_tmp, sample_name) in ((df_with_tests, '$W$'), (df_without_tests, '$WO$'))
-#     ],
-#     headers=['Tests', '$N$', '$Md$', '$\\bar{x}$', '$s$', '$X \sim N$'],
-#     showindex=issues_column,
-#     tablefmt='latex',
-# )
-# T.LATEX_ESCAPE_RULES = old_escape_rules
-# with open(path_join(results_output, "sonar_metrics.tex"), 'w') as f:
-#     f.write(table)
-# # ------------------------------------------------- #
+def correlation_matrix(df, features=FEATURES, output_file=None):
+    corr = corrplot.Corrplot(df[features].corr(method="spearman"))
+    corr.plot(grid=False)
+    figure = plt.gcf()
+    ax = plt.gca()
+    labels = [label.replace("sonar_","").replace("_", " ").title() for label in features]
+    ax.set_xticklabels(labels)
+    ax.set_yticklabels(labels)
+    plt.gca().spines['left'].set_visible(False)
+    plt.gca().spines['top'].set_visible(False)
+    plt.gca().spines['right'].set_visible(False)
+    plt.gca().spines['bottom'].set_visible(False)
+    if output_file:
+        figure.tight_layout()
+        figure.savefig(output_file)
+    else:
+        figure.show()

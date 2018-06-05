@@ -9,3 +9,4 @@ tabulate
 scipy
 statsmodels
 timeout-decorator
+biokit

@@ -92,7 +92,7 @@ def reports(results_input, results_output):
     now = pandas.Timestamp(datetime.now())
     df = pandas.read_csv(
         path_join(results_input, "results_with_coverage.csv"),
-        parse_dates=[0,10]
+        parse_dates=[0, 10]
     )
     df_googleplay = pandas.read_csv(
         path_join(results_input, "googleplay.csv"),
@@ -126,8 +126,9 @@ def reports(results_input, results_output):
     df_without_tests = df[~df['tests']]
 
 
-    from corr_analysis import generate_corr_table
-    generate_corr_table(df, output_file=path_join(results_output, "corr_matrix.tex"))
+    from corr_analysis import correlation_matrix
+    correlation_matrix(df, output_file=path_join(results_output, "corr_matrix.pdf"))
+    import pdb; pdb.set_trace()
 
     colors_dict = {
         'any': 'C0',
@@ -623,24 +624,6 @@ def reports(results_input, results_output):
     #multiple test correction ()
     _,pvalues,*_ = multipletests(pvalues, alpha=0.05, method='fdr_bh')
 
-<<<<<<< HEAD
-    bbox_props = dict(boxstyle="round,pad=0.3", fc=(1,1,1,0.8), ec='lightgray', lw=0.5)
-    for name, x, mean_difference, median_difference, pvalue in zip(names, xticks, mean_differences, median_differences, pvalues):
-        ax.annotate(
-            (
-                r"$\Delta\bar{{x}} = {:.2f}$".format(mean_difference)+"\n"+
-                r"$\Delta Md = {:.2f}$".format(median_difference)+"\n"+
-                r"$p = {:.4f}$".format(pvalue)
-            ),
-            (x,4.2),
-            va='top', ha='center',
-            fontsize=11,
-            bbox=bbox_props
-        )
-    for patch, pvalue in zip(boxplot['boxes'], np.repeat(pvalues,2)):
-        if pvalue < 0.05:
-            patch.set_facecolor((1.0,1.0,0.8,0.7))
-=======
     # # Add info boxes to the boxplot
     # bbox_props_not_significant = dict(boxstyle="round,pad=0.3", fc=(1,1,1,0.8), ec='lightgray', lw=0.5)
     # bbox_props_significant = dict(boxstyle="round,pad=0.3", fc=(1,1,1,0.8), ec='black', lw=0.5)
@@ -666,7 +649,6 @@ def reports(results_input, results_output):
             # patch.set_facecolor(color)
             # patch.set_hatch("\\")
             patch.set_linewidth(2)
->>>>>>> 86f311108e24f5304d6c1ed6a07e59f35cd2d192
 
     figure.tight_layout()
     figure.savefig(path_join(results_output, "sonar_vs_tests.pdf"))
