@@ -19,6 +19,7 @@ from scipy.stats import shapiro
 from scipy.stats import ttest_ind
 from scipy.stats import zscore
 from statsmodels.sandbox.stats.multicomp import multipletests
+from scipy.stats import chi2_contingency
 
 ui_automation_frameworks = [
     "androidviewclient",
@@ -385,21 +386,21 @@ def reports(results_input, results_output):
     )
     ax.set_xticklabels(labels, fontsize=14, rotation='vertical')
     ax.set_xlabel("Downloads", fontsize=15)
-    ax.set_ylabel("Number of apps", fontsize=15)
+    ax.set_ylabel("Number of apps (out of {})".format(len(df.index)), fontsize=15)
     ax.spines['right'].set_visible(False)
     ax.spines['top'].set_visible(False)
     ax.spines['left'].set_visible(False)
     ax.spines['bottom'].set_visible(True)
     ax.yaxis.grid(linestyle='dotted', color='gray')
 
-    ax2 = ax.twinx()
-    ax2.grid(False)
-    ax2.set_ylim(ax.get_ylim())
-    ax2.set_yticklabels(["{:.0%}".format(tick/len(df_with_google_data)) for tick in ax2.get_yticks()], fontsize=14)
-    ax2.spines['right'].set_visible(False)
-    ax2.spines['top'].set_visible(False)
-    ax2.spines['left'].set_visible(False)
-    ax2.set_ylabel("Percentage of apps", fontsize=15)
+    # ax2 = ax.twinx()
+    # ax2.grid(False)
+    # ax2.set_ylim(ax.get_ylim())
+    # ax2.set_yticklabels(["{:.0%}".format(tick/len(df_with_google_data)) for tick in ax2.get_yticks()], fontsize=14)
+    # ax2.spines['right'].set_visible(False)
+    # ax2.spines['top'].set_visible(False)
+    # ax2.spines['left'].set_visible(False)
+    # ax2.set_ylabel("Percentage of apps", fontsize=15)
 
 
     figure.tight_layout()
@@ -505,22 +506,58 @@ def reports(results_input, results_output):
     ax.spines['top'].set_visible(False)
     ax.spines['left'].set_visible(False)
     ax.yaxis.grid(linestyle='dotted', color='gray')
-    ax.set_ylabel("Number of apps", fontsize=15)
+    ax.set_ylabel("Number of apps (out of {})".format(len(df.index)), fontsize=15)
     ax.set_xticklabels(["All"]+[namepedia.get(key, key.title().replace('_', ' ')) for key in ci_services])
 
-    ax2 = ax.twinx()
-    ax2.grid(False)
-    ax2.set_ylim(ax.get_ylim())
-    ax2.set_yticklabels(["{:.0%}".format(tick/len(df)) for tick in ax2.get_yticks()], fontsize=15)
-    ax2.spines['right'].set_visible(False)
-    ax2.spines['top'].set_visible(False)
-    ax2.spines['left'].set_visible(False)
-    ax2.set_ylabel("Percentage of apps", fontsize=15)
+    # ax2 = ax.twinx()
+    # ax2.grid(False)
+    # ax2.set_ylim(ax.get_ylim())
+    # ax2.set_yticklabels(["{:.0%}".format(tick/len(df)) for tick in ax2.get_yticks()], fontsize=15)
+    # ax2.spines['right'].set_visible(False)
+    # ax2.spines['top'].set_visible(False)
+    # ax2.spines['left'].set_visible(False)
+    # ax2.set_ylabel("Percentage of apps", fontsize=15)
 
     for p in ax.patches:
         ax.annotate("{:.0f}".format(p.get_height()), (p.get_x() +p.get_width()/2, p.get_height()+4), ha='center', fontsize=14)
     figure.tight_layout()
     figure.savefig(path_join(results_output, "ci_cd_hist.pdf"))
+    # ------------------------------------------------------- #
+    
+    # ---------------- Mosaic CI/CD ---------------- #
+    from statsmodels.graphics.mosaicplot import mosaic
+    def properties(keys):
+        keys = list(map(lambda i: i == 'True', keys))
+        if all(keys):
+            return {'color': 'lightgreen'}
+        elif any(keys):
+            return {'color': 'lightgoldenrodyellow'}
+        return {'color': 'lightcoral'}
+
+    figure, ax  = plt.subplots()
+    labelizer = lambda k: {
+        ('False','False'): 'No Tests and No CI/CD\n({:.1%})'.format(1 - df[["tests", "ci/cd"]].any(axis=1).sum()/len(df)),
+        ('False','True'): 'No Tests but With CI/CD\n({:.1%})'.format(sum(~df["tests"] & df["ci/cd"])/len(df)),
+        ('True','False'): 'With Tests but No CI/CD\n({:.1%})'.format(sum(df["tests"] & ~df["ci/cd"])/len(df)),
+        ('True','True'): 'With Tests and With CI/CD\n({:.1%})'.format(df[["tests", "ci/cd"]].all(axis=1).sum()/len(df)),
+    }.get(k, k)
+
+    props = lambda key: {'color': 'r' if 'T' in key else 'gray'}
+    mosaic(df, ["tests", "ci/cd"], properties= properties, labelizer=labelizer, ax=ax)
+    ax.set_xticklabels(['No tests', 'With tests'])
+    ax.set_yticklabels(['With CI/CD', 'No CI/CD'])
+    
+    ax.invert_yaxis()
+    figure.tight_layout()
+    figure.savefig(path_join(results_output, "ci_cd_mosaic.pdf"))
+    
+    obs = [
+        [sum(~df["tests"] & df["ci/cd"]), sum(~df["tests"] & ~df["ci/cd"])], #No tests
+        [sum(df["tests"] & df["ci/cd"]), sum(df["tests"] & ~df["ci/cd"])] #Tests
+    ]
+    chi,pvalue,dof,_ = chi2_contingency(obs)
+    print("Relationship between Ci/CD and Automated testing:")
+    print("Chi={}, dof={}, p={}".format(chi,dof,pvalue))
     # ------------------------------------------------------- #
 
     # ------------------ Sonar vs tests --------------- #

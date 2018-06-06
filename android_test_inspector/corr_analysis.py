@@ -53,7 +53,7 @@ def fancy_corr_table(df: pandas.DataFrame, output_file, features=FEATURES):
 
 def correlation_matrix(df, features=FEATURES, output_file=None):
     corr = corrplot.Corrplot(df[features].corr(method="spearman"))
-    corr.plot(grid=False)
+    corr.plot(grid=False, method='text', colorbar=True, lower='ellipse', upper='text')
     figure = plt.gcf()
     ax = plt.gca()
     labels = [label.replace("sonar_","").replace("_", " ").title() for label in features]
