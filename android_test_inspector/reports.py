@@ -90,7 +90,7 @@ def human_format(number):
 @click.option('-o','--results_output', default="./reports", type=click.Path(exists=True))
 def reports(results_input, results_output):
     """Generate reports for EMSE paper."""
-    now = pandas.Timestamp(datetime.now())
+    now = pandas.Timestamp(2017, 9, 30, 12)
     df = pandas.read_csv(
         path_join(results_input, "results_with_coverage.csv"),
         parse_dates=[0, 10]
@@ -253,7 +253,7 @@ def reports(results_input, results_output):
     tests_in_projects_by_time_of_creation(df, unit_test_frameworks, label="Unit tests", color=colors_dict['unit_test_frameworks'], zorder=3)
     tests_in_projects_by_time_of_creation(df, ui_automation_frameworks, label="UI Automation", color=colors_dict['ui_automation_frameworks'], zorder=4)
     tests_in_projects_by_time_of_creation(df, cloud_test_services, label="Cloud testing", color=colors_dict['cloud_test_services'], zorder=5)
-    ax.set_xlabel("Years since creation")
+    ax.set_xlabel("Years since first commit")
     figure.tight_layout()
     figure.savefig(path_join(results_output, "tests_by_age.pdf"))
     # ------------------------------------------------------------ #
