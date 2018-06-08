@@ -201,9 +201,9 @@ def reports(results_input, results_output):
         ytext = y + ( ax.get_ylim()[1] - ax.get_ylim()[0] ) / 22
         ax.annotate(label, xy=(xcenter,ytext), ha='center', va='center', fontsize=9)
 
-    draw_range(ax, 0.5, 5.5, "Unit test")
-    draw_range(ax, 5.5, 14.5, "UI automation")
-    draw_range(ax, 14.5, 21.5, "Cloud test")
+    draw_range(ax, 0.5, 5.5, "Unit testing")
+    draw_range(ax, 5.5, 14.5, "GUI testing")
+    draw_range(ax, 14.5, 21.5, "Cloud testing")
     # draw_range(ax, 21.5, 26.5, "CI/CD")
 
     figure.tight_layout()
@@ -250,8 +250,8 @@ def reports(results_input, results_output):
 
     figure, ax = plt.subplots(1,1)
     tests_in_projects_by_time_of_creation(df, unit_test_frameworks+ui_automation_frameworks+cloud_test_services, label="Any", color=colors_dict['any'], zorder=2)
-    tests_in_projects_by_time_of_creation(df, unit_test_frameworks, label="Unit tests", color=colors_dict['unit_test_frameworks'], zorder=3)
-    tests_in_projects_by_time_of_creation(df, ui_automation_frameworks, label="UI Automation", color=colors_dict['ui_automation_frameworks'], zorder=4)
+    tests_in_projects_by_time_of_creation(df, unit_test_frameworks, label="Unit testing", color=colors_dict['unit_test_frameworks'], zorder=3)
+    tests_in_projects_by_time_of_creation(df, ui_automation_frameworks, label="GUI testing", color=colors_dict['ui_automation_frameworks'], zorder=4)
     tests_in_projects_by_time_of_creation(df, cloud_test_services, label="Cloud testing", color=colors_dict['cloud_test_services'], zorder=5)
     ax.set_xlabel("Years since first commit")
     figure.tight_layout()
@@ -299,8 +299,8 @@ def reports(results_input, results_output):
 
     figure, ax = plt.subplots(1,1)
     tests_in_projects_by_time_of_update(df_old, unit_test_frameworks+ui_automation_frameworks+cloud_test_services, label="Any", color=colors_dict['any'], zorder=1)
-    tests_in_projects_by_time_of_update(df_old, unit_test_frameworks, label="Unit tests", color=colors_dict['unit_test_frameworks'], zorder=2)
-    tests_in_projects_by_time_of_update(df_old, ui_automation_frameworks, label="UI Automation", color=colors_dict['ui_automation_frameworks'], zorder=3)
+    tests_in_projects_by_time_of_update(df_old, unit_test_frameworks, label="Unit testing", color=colors_dict['unit_test_frameworks'], zorder=2)
+    tests_in_projects_by_time_of_update(df_old, ui_automation_frameworks, label="GUI testing", color=colors_dict['ui_automation_frameworks'], zorder=3)
     tests_in_projects_by_time_of_update(df_old, cloud_test_services, label="Cloud testing", color=colors_dict['cloud_test_services'], zorder=4)
     ax.set_xlabel("Years since last update")
     figure.tight_layout()
