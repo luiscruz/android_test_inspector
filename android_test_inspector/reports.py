@@ -125,6 +125,7 @@ def reports(results_input, results_output):
     df_with_google_data = df[~df["rating_count"].isnull()]
     df_with_tests = df[df['tests']]
     df_without_tests = df[~df['tests']]
+    df.to_csv("results_merged.csv")
 
 
     from corr_analysis import correlation_matrix
