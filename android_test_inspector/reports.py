@@ -233,7 +233,7 @@ def reports(results_input, results_output):
             if verbose:
                 print("Age {}:".format(age))
                 print("{} out of {} projects ({:.1%}).".format(n_projects_with_tests, total_projects, portion))
-
+        
         plt.plot(range(age_max), portions, label=label, zorder=zorder)
         plt.scatter(range(age_max), portions, total_projects_history, marker='o', linewidth='1', zorder=zorder)
         ax = plt.gca()
@@ -258,6 +258,61 @@ def reports(results_input, results_output):
     figure.tight_layout()
     figure.savefig(path_join(results_output, "tests_by_age.pdf"))
     # ------------------------------------------------------------ #
+
+    # --- Percentage of Android tests over the age of the apps (cummulated) --- #
+    def tests_in_projects_by_time_of_creation_cumm(df_projects, frameworks, label=None,
+                                              title=None,
+                                              zorder=1, color=None,
+                                              verbose=False):
+        project_with_test_per_age = []
+        total_projects_per_age = []
+        n_projects_with_tests_history = []
+        total_projects_history = []
+        age_max = df_projects['age_numeric'].max()+1
+        for age in range(age_max):
+            n_projects_with_tests = df_projects[df_projects['age_numeric']==age][frameworks].apply(any, axis=1).sum()
+            n_projects_with_tests_history.append(n_projects_with_tests)
+            total_projects = len(df_projects[df_projects['age_numeric']==age].index)
+            total_projects_history.append(total_projects)
+            project_with_test_per_age.append(n_projects_with_tests)
+            total_projects_per_age.append(total_projects)
+            if verbose:
+                print("Age {}:".format(age))
+                print("{} out of {} projects ({:.1%}).".format(n_projects_with_tests, total_projects, portion))
+        project_with_test_per_age_cum = [sum(project_with_test_per_age[:index+1]) for index in range(len(project_with_test_per_age))]
+        total_projects_per_age_cum = [sum(total_projects_per_age[:index+1]) for index in range(len(total_projects_per_age))]
+        portions = []
+        for with_tests, total in zip(project_with_test_per_age_cum, total_projects_per_age_cum):
+            if total > 0:
+                portions.append(with_tests/total)
+            else:
+                portions.append(0)
+        plt.plot(range(age_max), portions, label=label, marker='.', zorder=zorder)
+        # plt.scatter(range(age_max), portions, total_projects_history, marker='o', linewidth='1', zorder=zorder)
+        ax = plt.gca()
+        ax.spines['right'].set_visible(False)
+        ax.spines['top'].set_visible(False)
+        ax.spines['left'].set_visible(False)
+        ax.set_xticks(range(age_max))
+        ax.set_yticklabels(["{:.0%}".format(label) for label in ax.get_yticks()])
+        ax.set_ylabel("Percentage of projects")
+        ax.yaxis.grid(linestyle='dotted', color='gray')
+        if label:
+            legend = ax.legend(loc='upper center', shadow=False)
+        if title:
+            ax.set_title(title)
+
+    figure, ax = plt.subplots(1,1)
+    tests_in_projects_by_time_of_creation_cumm(df, unit_test_frameworks+ui_automation_frameworks+cloud_test_services, label="Any", color=colors_dict['any'], zorder=2)
+    tests_in_projects_by_time_of_creation_cumm(df, unit_test_frameworks, label="Unit testing", color=colors_dict['unit_test_frameworks'], zorder=3)
+    tests_in_projects_by_time_of_creation_cumm(df, ui_automation_frameworks, label="GUI testing", color=colors_dict['ui_automation_frameworks'], zorder=4)
+    tests_in_projects_by_time_of_creation_cumm(df, cloud_test_services, label="Cloud testing", color=colors_dict['cloud_test_services'], zorder=5)
+    ax.set_xlabel("Years since first commit")
+    figure.tight_layout()
+    figure.savefig(path_join(results_output, "tests_by_age_cumm.pdf"))
+    # ------------------------------------------------------------ #
+
+
 
     # --- Percentage of 2+years apps with tests grouped by time since last update --- #
     def tests_in_projects_by_time_of_update(df_projects, frameworks, label=None,
