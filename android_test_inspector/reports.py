@@ -9,6 +9,7 @@ matplotlib.rcParams['font.family'] = 'serif'
 matplotlib.rcParams['mathtext.fontset'] = 'cm'
 
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 import pandas
 import numpy as np
 from tabulate import tabulate
@@ -138,6 +139,14 @@ def reports(results_input, results_output):
         'cloud_test_services': 'C3',
         'ci_services': 'C4',
     }
+    
+    marker_dict = {
+        'any': 'o',
+        'unit_test_frameworks': 'v',
+        'ui_automation_frameworks': '*',
+        'cloud_test_services': 'H',
+        'ci_services': 's',
+    }
 
     # --- Number of projects by framework --- #
     columns = (
@@ -260,10 +269,8 @@ def reports(results_input, results_output):
     # ------------------------------------------------------------ #
 
     # --- Percentage of Android tests over the age of the apps (cummulated) --- #
-    def tests_in_projects_by_time_of_creation_cumm(df_projects, frameworks, label=None,
-                                              title=None,
-                                              zorder=1, color=None,
-                                              verbose=False):
+    def tests_in_projects_by_time_of_creation_cumm(df_projects, frameworks,
+                                                   title=None, verbose=False, **kwargs):
         project_with_test_per_age = []
         total_projects_per_age = []
         n_projects_with_tests_history = []
@@ -287,7 +294,7 @@ def reports(results_input, results_output):
                 portions.append(with_tests/total)
             else:
                 portions.append(0)
-        plt.plot(range(age_max), portions, label=label, marker='.', zorder=zorder)
+        plt.plot(range(age_max), portions, **kwargs)
         # plt.scatter(range(age_max), portions, total_projects_history, marker='o', linewidth='1', zorder=zorder)
         ax = plt.gca()
         ax.spines['right'].set_visible(False)
@@ -297,16 +304,36 @@ def reports(results_input, results_output):
         ax.set_yticklabels(["{:.0%}".format(label) for label in ax.get_yticks()])
         ax.set_ylabel("Percentage of projects")
         ax.yaxis.grid(linestyle='dotted', color='gray')
-        if label:
-            legend = ax.legend(loc='upper center', shadow=False)
+        ax.legend(loc='upper center', shadow=False)
         if title:
             ax.set_title(title)
 
     figure, ax = plt.subplots(1,1)
-    tests_in_projects_by_time_of_creation_cumm(df, unit_test_frameworks+ui_automation_frameworks+cloud_test_services, label="Any", color=colors_dict['any'], zorder=2)
-    tests_in_projects_by_time_of_creation_cumm(df, unit_test_frameworks, label="Unit testing", color=colors_dict['unit_test_frameworks'], zorder=3)
-    tests_in_projects_by_time_of_creation_cumm(df, ui_automation_frameworks, label="GUI testing", color=colors_dict['ui_automation_frameworks'], zorder=4)
-    tests_in_projects_by_time_of_creation_cumm(df, cloud_test_services, label="Cloud testing", color=colors_dict['cloud_test_services'], zorder=5)
+    tests_in_projects_by_time_of_creation_cumm(
+        df,
+        unit_test_frameworks+ui_automation_frameworks+cloud_test_services,
+        label="Any", color=colors_dict['any'], zorder=2,
+        marker=marker_dict['any'],
+    )
+    tests_in_projects_by_time_of_creation_cumm(
+        df,
+        unit_test_frameworks,
+        label="Unit testing", color=colors_dict['unit_test_frameworks'], zorder=3,
+        #linestyle=linestyle_dict['unit_test_frameworks']
+        marker=marker_dict['unit_test_frameworks'],
+    )
+    tests_in_projects_by_time_of_creation_cumm(
+        df,
+        ui_automation_frameworks,
+        label="GUI testing", color=colors_dict['ui_automation_frameworks'], zorder=4,
+        marker=marker_dict['ui_automation_frameworks'],
+    )
+    tests_in_projects_by_time_of_creation_cumm(
+        df,
+        cloud_test_services,
+        label="Cloud testing", color=colors_dict['cloud_test_services'], zorder=5,
+        marker=marker_dict['cloud_test_services'],
+    )
     ax.set_xlabel("Years since first commit")
     figure.tight_layout()
     figure.savefig(path_join(results_output, "tests_by_age_cumm.pdf"))
@@ -656,19 +683,23 @@ def reports(results_input, results_output):
         'C0',
         'darkred'
     )*len(features)
-    for patch, color in zip(boxplot['boxes'], colors):
+    hatches = (
+        '/',
+        ''
+    )*len(features)
+    for patch, color, hatch in zip(boxplot['boxes'], colors, hatches):
         patch.set_edgecolor(color)
         patch.set_facecolor((1,1,1,0.8))
+        patch.set_hatch(hatch)
+        patch.set_alpha(0.9)
     for cap, whisker, color in zip(boxplot['caps'], boxplot['whiskers'], np.repeat(colors,2)):
         cap.set_color(color)
         whisker.set_color(color)
 
-    # Big hack for legend
-    h1, = ax.plot([1,1], colors[0])
-    h2, = ax.plot([1,1], colors[1])
-    ax.legend((h1, h2),('With Tests', 'Without Tests'), facecolor='white')
-    h1.set_visible(False)
-    h2.set_visible(False)
+    # legend
+    circ1 = mpatches.Patch(facecolor='white', edgecolor=colors[0], hatch=hatches[0], label='With Tests')
+    circ2 = mpatches.Patch(facecolor='white', edgecolor=colors[1], hatch=hatches[1], label='Without Tests')
+    ax.legend(handles=(circ1,circ2), facecolor='white')
     # -----
 
     ax.yaxis.grid(linestyle='dotted', color='gray')
