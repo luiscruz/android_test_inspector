@@ -583,7 +583,7 @@ def reports(results_input, results_output):
         "travis": "Travis CI",
     }
     df[['ci/cd']+ci_services].sum().plot.bar(
-        fontsize=15, edgecolor = 'k', linewidth = [1]+[0]*len(ci_services)
+        fontsize=15, edgecolor = 'k', color='C4', linewidth = [1]+[0]*len(ci_services)
     )
     ax.spines['right'].set_visible(False)
     ax.spines['top'].set_visible(False)
@@ -617,15 +617,14 @@ def reports(results_input, results_output):
             return {'color': 'lightgoldenrodyellow'}
         return {'color': 'lightcoral'}
 
-    figure, ax  = plt.subplots()
+    figure, ax  = plt.subplots(figsize=(4.5,3.5))
     labelizer = lambda k: {
-        ('False','False'): 'No Tests and No CI/CD\n({:.1%})'.format(1 - df[["tests", "ci/cd"]].any(axis=1).sum()/len(df)),
-        ('False','True'): 'No Tests but With CI/CD\n({:.1%})'.format(sum(~df["tests"] & df["ci/cd"])/len(df)),
-        ('True','False'): 'With Tests but No CI/CD\n({:.1%})'.format(sum(df["tests"] & ~df["ci/cd"])/len(df)),
-        ('True','True'): 'With Tests and With CI/CD\n({:.1%})'.format(df[["tests", "ci/cd"]].all(axis=1).sum()/len(df)),
+        ('False','False'): 'A. No Tests and no CI/CD\n({:.1%})'.format(1 - df[["tests", "ci/cd"]].any(axis=1).sum()/len(df)),
+        ('True','False'): 'B. With Tests but\nno CI/CD\n({:.1%})'.format(sum(df["tests"] & ~df["ci/cd"])/len(df)),
+        ('False','True'): 'C. No Tests but with CI/CD\n({:.1%})'.format(sum(~df["tests"] & df["ci/cd"])/len(df)),
+        ('True','True'): 'D. With Tests and\nwith CI/CD\n({:.1%})'.format(df[["tests", "ci/cd"]].all(axis=1).sum()/len(df)),
     }.get(k, k)
 
-    props = lambda key: {'color': 'r' if 'T' in key else 'gray'}
     mosaic(df, ["tests", "ci/cd"], properties= properties, labelizer=labelizer, ax=ax)
     ax.set_xticklabels(['No tests', 'With tests'])
     ax.set_yticklabels(['With CI/CD', 'No CI/CD'])
