@@ -268,7 +268,7 @@ def reports(results_input, results_output):
     figure.savefig(path_join(results_output, "tests_by_age.pdf"))
     # ------------------------------------------------------------ #
 
-    # --- Percentage of Android tests over the age of the apps (cummulated) --- #
+    # --- Percentage of Android tests over the age of the apps (cumulated) --- #
     def tests_in_projects_by_time_of_creation_cumm(df_projects, frameworks,
                                                    title=None, verbose=False, **kwargs):
         project_with_test_per_age = []
@@ -276,7 +276,7 @@ def reports(results_input, results_output):
         n_projects_with_tests_history = []
         total_projects_history = []
         age_max = df_projects['age_numeric'].max()+1
-        for age in range(age_max):
+        for age in range(age_max)[::-1]:
             n_projects_with_tests = df_projects[df_projects['age_numeric']==age][frameworks].apply(any, axis=1).sum()
             n_projects_with_tests_history.append(n_projects_with_tests)
             total_projects = len(df_projects[df_projects['age_numeric']==age].index)
@@ -291,16 +291,16 @@ def reports(results_input, results_output):
         portions = []
         for with_tests, total in zip(project_with_test_per_age_cum, total_projects_per_age_cum):
             if total > 0:
-                portions.append(with_tests/total)
+                portions.append(with_tests/len(df_projects))
             else:
                 portions.append(0)
-        plt.plot(range(age_max), portions, **kwargs)
+        plt.plot(range(age_max)[::-1], portions, **kwargs)
         # plt.scatter(range(age_max), portions, total_projects_history, marker='o', linewidth='1', zorder=zorder)
         ax = plt.gca()
         ax.spines['right'].set_visible(False)
         ax.spines['top'].set_visible(False)
         ax.spines['left'].set_visible(False)
-        ax.set_xticks(range(age_max))
+        ax.set_xticks(range(age_max)[::-1])
         ax.set_yticklabels(["{:.0%}".format(label) for label in ax.get_yticks()])
         ax.set_ylabel("Percentage of projects")
         ax.yaxis.grid(linestyle='dotted', color='gray')
@@ -425,8 +425,49 @@ def reports(results_input, results_output):
         return series[outliers_z_score(series)]
         # return series[np.abs(zscore(series) < 3)]
 
-    stats = pandas.concat([remove_outliers(df[metric]).describe() for metric in metrics], axis=1)
+    def _descriptive_stats(series, ):
+        return (
+            series.count(),
+            series.mean(),
+            series.std(),
+            series.min(),
+            series.quantile(0.25),
+            series.median(),
+            series.quantile(0.75),
+            series.max(),
+            shapiro(series)[1] < 0.01 and "$p < 0.01$",
+        )
 
+    stats = []
+    for metric in metrics:
+        metric_title = metric.title().replace("_", " ")
+        df_tmp = remove_outliers_df(df, metric)
+        df_tmp_tests = df_tmp[df_tmp['tests']]
+        stats.append((
+            f"\\multirow{{2}}{{*}}{{{metric_title}}}",
+            '$W$',
+            *_descriptive_stats(df_tmp_tests[metric])
+        ))
+        df_tmp_wo_tests = df_tmp[~df_tmp['tests']]
+        stats.append((
+            "",
+            '$WO$',
+            *_descriptive_stats(df_tmp_wo_tests[metric])
+        ))
+    old_escape_rules = T.LATEX_ESCAPE_RULES
+    T.LATEX_ESCAPE_RULES = {'%': '\\%'}
+    table = tabulate(
+        stats,
+        headers=['', 'Tests', '$N$', '$\\bar{x}$', '$s$', '$min$', '$50%$', '$Md$', '$75%$', '$max$', '$X \sim N$'],
+        # showindex=issues_column,
+        tablefmt='latex',
+        floatfmt=".0f",
+    )
+    T.LATEX_ESCAPE_RULES = old_escape_rules
+    with open(path_join(results_output, "popularity_metrics_stats_2.tex"), 'w') as f:
+        f.write(table)
+
+    stats = pandas.concat([remove_outliers(df[metric]).describe() for metric in metrics], axis=1)
     stats = stats.applymap((lambda x: "${:.1f}$".format(float(x)))).astype(str)
     stats[['stars','forks', 'contributors', 'commits', 'rating_count']] = stats[['stars','forks', 'contributors', 'commits', 'rating_count']].applymap((lambda x: "${:.0f}$".format(float(x[1:-1])))).astype(str)
     stats.loc['count']= stats.loc['count'].map((lambda x: "${:.0f}$".format(float(x[1:-1])))).astype(str)
