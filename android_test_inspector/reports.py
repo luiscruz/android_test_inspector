@@ -22,6 +22,8 @@ from scipy.stats import zscore
 from statsmodels.sandbox.stats.multicomp import multipletests
 from scipy.stats import chi2_contingency
 
+from android_test_inspector.cles import cles_brute as cles
+
 ui_automation_frameworks = [
     "androidviewclient",
     'appium',
@@ -129,7 +131,7 @@ def reports(results_input, results_output):
     df.to_csv("results_merged.csv")
 
 
-    from corr_analysis import correlation_matrix
+    from android_test_inspector.corr_analysis import correlation_matrix
     correlation_matrix(df, output_file=path_join(results_output, "corr_matrix.pdf"))
 
     colors_dict = {
@@ -458,7 +460,7 @@ def reports(results_input, results_output):
     T.LATEX_ESCAPE_RULES = {'%': '\\%'}
     table = tabulate(
         stats,
-        headers=['', 'Tests', '$N$', '$\\bar{x}$', '$s$', '$min$', '$50%$', '$Md$', '$75%$', '$max$', '$X \sim N$'],
+        headers=['', 'Tests', '$N$', '$\\bar{x}$', '$s$', '$min$', '$25%$', '$Md$', '$75%$', '$max$', '$X \sim N$'],
         # showindex=issues_column,
         tablefmt='latex',
         floatfmt=".0f",
@@ -550,6 +552,7 @@ def reports(results_input, results_output):
 
     def analyze_populations(a,b, continuous=True):
         mean_difference = np.mean(b) - np.mean(a)
+        median_difference = np.median(b) - np.median(a)
         improvement = mean_difference/np.mean(b)
         ks_test, ks_p = ks_2samp(a,b)
         mwu_test, mwu_p = mannwhitneyu(a,b, alternative='two-sided')
@@ -560,7 +563,9 @@ def reports(results_input, results_output):
             'Test': continuous and "${:,.0f}$".format(ks_test) or "${:,.0f}$".format(mwu_test),
             '$p$-value': continuous and ks_p or mwu_p,
             '$\\Delta\\bar{x}$': "${:,.2f}$".format(mean_difference),
-            'Cohen\'s $d$': cohen_d(a,b),
+            '$\\Delta Md$': "${:,.2f}$".format(median_difference),
+            'CL (%)': f"${cles(a,b):,.2%}$",
+            'Cohen\'s $d$': f"${cohen_d(a,b):,.4f}$",
             '$d_r$': "${:.1%}$".format(improvement),
         }
 
@@ -764,6 +769,18 @@ def reports(results_input, results_output):
         df_with_tests[feature].dropna().median()
         for feature in features
     ]
+
+    relative_differences = [
+        int((df_without_tests[feature].dropna().median() - df_with_tests[feature].dropna().median()) / df_with_tests[feature].dropna().median()*100)
+        for feature in features
+    ]
+    cles_values = [
+        "{:.2%}".format(cles(
+            df_with_tests[feature].dropna(),
+            df_without_tests[feature].dropna()
+        ))
+        for feature in features
+    ]
     cohensd_values = [
         cohen_d(
             df_with_tests[feature].dropna(),
@@ -817,12 +834,12 @@ def reports(results_input, results_output):
     figure.savefig(path_join(results_output, "sonar_vs_tests.pdf"))
 
     #SONAR ISSUEs SIGNIFICANCE RESULTS TABLE
-    table_values = list(zip(names, mean_differences, median_differences, cohensd_values, pvalues))
+    table_values = list(zip(names, mean_differences, median_differences, relative_differences, cles_values, cohensd_values, pvalues))
     old_escape_rules = T.LATEX_ESCAPE_RULES
     T.LATEX_ESCAPE_RULES = {'%': '\\%'}
     table = tabulate(
         table_values,
-        headers=['Severity', r"$\Delta\bar{{x}}$", r"$\Delta Md$", 'Cohen\'s $d$', '$p$-value'],
+        headers=['Severity', r"$\Delta\bar{{x}}$", r"$\Delta Md$", r"$\frac{\Delta{}Md}{Md_W}$(%)",'CL (%)','Cohen\'s $d$', '$p$-value'],
         # showindex=issues_column,
         tablefmt='latex',
         floatfmt=".4f",
@@ -841,9 +858,9 @@ def reports(results_input, results_output):
             (
                 sample_name,
                 df_tmp[feature].dropna().count(),
-                "${:.2f}$".format(df_tmp[feature].dropna().median()),
-                "${:.2f}$".format(df_tmp[feature].dropna().mean()),
-                "${:.2f}$".format(df_tmp[feature].dropna().std()),
+                "${:.4f}$".format(df_tmp[feature].dropna().median()),
+                "${:.4f}$".format(df_tmp[feature].dropna().mean()),
+                "${:.4f}$".format(df_tmp[feature].dropna().std()),
                 shapiro(df_tmp[feature].dropna())[1] < 0.0001 and "$p < 0.0001$",
             )
             for feature in features
