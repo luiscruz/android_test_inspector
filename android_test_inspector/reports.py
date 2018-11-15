@@ -346,7 +346,7 @@ def reports(results_input, results_output):
     # --- Percentage of 2+years apps with tests grouped by time since last update --- #
     def tests_in_projects_by_time_of_update(df_projects, frameworks, label=None,
                                               title=None,
-                                              verbose=False, zorder=None, color=None):
+                                              verbose=False, zorder=None, color=None, **kwargs):
         portions = []
         n_projects_with_tests_history = []
         total_projects_history = []
@@ -365,8 +365,8 @@ def reports(results_input, results_output):
                 print("Age {}:".format(age))
                 print("{} out of {} projects ({:.1%}).".format(n_projects_with_tests, total_projects, portion))
 
-        plt.plot(range(age_max), portions, label=label, zorder=zorder)
-        plt.scatter(range(age_max), portions, total_projects_history, marker='o', linewidth='1', zorder=zorder)
+        plt.plot(range(age_max), portions, label=label, zorder=zorder, **kwargs)
+        # plt.scatter(range(age_max), portions, total_projects_history, marker='o', linewidth='1', zorder=zorder)
         ax = plt.gca()
         ax.spines['right'].set_visible(False)
         ax.spines['top'].set_visible(False)
@@ -383,10 +383,10 @@ def reports(results_input, results_output):
             plt.title(title)
 
     figure, ax = plt.subplots(1,1)
-    tests_in_projects_by_time_of_update(df_old, unit_test_frameworks+ui_automation_frameworks+cloud_test_services, label="Any", color=colors_dict['any'], zorder=1)
-    tests_in_projects_by_time_of_update(df_old, unit_test_frameworks, label="Unit testing", color=colors_dict['unit_test_frameworks'], zorder=2)
-    tests_in_projects_by_time_of_update(df_old, ui_automation_frameworks, label="GUI testing", color=colors_dict['ui_automation_frameworks'], zorder=3)
-    tests_in_projects_by_time_of_update(df_old, cloud_test_services, label="Cloud testing", color=colors_dict['cloud_test_services'], zorder=4)
+    tests_in_projects_by_time_of_update(df_old, unit_test_frameworks+ui_automation_frameworks+cloud_test_services, label="Any", color=colors_dict['any'], marker=marker_dict['any'], zorder=1)
+    tests_in_projects_by_time_of_update(df_old, unit_test_frameworks, label="Unit testing", color=colors_dict['unit_test_frameworks'], marker=marker_dict['unit_test_frameworks'], zorder=2)
+    tests_in_projects_by_time_of_update(df_old, ui_automation_frameworks, label="GUI testing", color=colors_dict['ui_automation_frameworks'], marker=marker_dict['ui_automation_frameworks'], zorder=3)
+    tests_in_projects_by_time_of_update(df_old, cloud_test_services, label="Cloud testing", color=colors_dict['cloud_test_services'], marker=marker_dict['cloud_test_services'], zorder=4)
     ax.set_xlabel("Years since last update")
     figure.tight_layout()
     figure.savefig(path_join(results_output, "mature_tests_by_update.pdf"))
@@ -463,7 +463,7 @@ def reports(results_input, results_output):
         headers=['', 'Tests', '$N$', '$\\bar{x}$', '$s$', '$min$', '$25%$', '$Md$', '$75%$', '$max$', '$X \sim N$'],
         # showindex=issues_column,
         tablefmt='latex',
-        floatfmt=".0f",
+        floatfmt=".1f",
     )
     T.LATEX_ESCAPE_RULES = old_escape_rules
     with open(path_join(results_output, "popularity_metrics_stats_2.tex"), 'w') as f:
