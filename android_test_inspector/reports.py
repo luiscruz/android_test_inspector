@@ -149,6 +149,13 @@ def reports(results_input, results_output):
         'cloud_test_services': 'H',
         'ci_services': 's',
     }
+    
+    linestyle_dict = {
+        'any': '-',
+        'unit_test_frameworks': ':',
+        'ui_automation_frameworks': '--',
+        'cloud_test_services': '-.',
+    }
 
     # --- Number of projects by framework --- #
     columns = (
@@ -226,7 +233,7 @@ def reports(results_input, results_output):
     def tests_in_projects_by_time_of_creation(df_projects, frameworks, label=None,
                                               title=None,
                                               zorder=1, color=None,
-                                              verbose=False):
+                                              verbose=False, **kwargs):
         portions = []
         n_projects_with_tests_history = []
         total_projects_history = []
@@ -245,7 +252,7 @@ def reports(results_input, results_output):
                 print("Age {}:".format(age))
                 print("{} out of {} projects ({:.1%}).".format(n_projects_with_tests, total_projects, portion))
         
-        plt.plot(range(age_max), portions, label=label, zorder=zorder)
+        plt.plot(range(age_max), portions, label=label, zorder=zorder, **kwargs)
         plt.scatter(range(age_max), portions, total_projects_history, marker='o', linewidth='1', zorder=zorder)
         ax = plt.gca()
         ax.spines['right'].set_visible(False)
@@ -261,10 +268,10 @@ def reports(results_input, results_output):
             ax.set_title(title)
 
     figure, ax = plt.subplots(1,1)
-    tests_in_projects_by_time_of_creation(df, unit_test_frameworks+ui_automation_frameworks+cloud_test_services, label="Any", color=colors_dict['any'], zorder=2)
-    tests_in_projects_by_time_of_creation(df, unit_test_frameworks, label="Unit testing", color=colors_dict['unit_test_frameworks'], zorder=3)
-    tests_in_projects_by_time_of_creation(df, ui_automation_frameworks, label="GUI testing", color=colors_dict['ui_automation_frameworks'], zorder=4)
-    tests_in_projects_by_time_of_creation(df, cloud_test_services, label="Cloud testing", color=colors_dict['cloud_test_services'], zorder=5)
+    tests_in_projects_by_time_of_creation(df, unit_test_frameworks+ui_automation_frameworks+cloud_test_services, label="Any", color=colors_dict['any'], zorder=2, linestyle=linestyle_dict['any'])
+    tests_in_projects_by_time_of_creation(df, unit_test_frameworks, label="Unit testing", color=colors_dict['unit_test_frameworks'], zorder=3, linestyle=linestyle_dict['unit_test_frameworks'])
+    tests_in_projects_by_time_of_creation(df, ui_automation_frameworks, label="GUI testing", color=colors_dict['ui_automation_frameworks'], zorder=4, linestyle=linestyle_dict['ui_automation_frameworks'])
+    tests_in_projects_by_time_of_creation(df, cloud_test_services, label="Cloud testing", color=colors_dict['cloud_test_services'], zorder=5, linestyle=linestyle_dict['cloud_test_services'])
     ax.set_xlabel("Years since first commit")
     figure.tight_layout()
     figure.savefig(path_join(results_output, "tests_by_age.pdf"))
@@ -297,7 +304,7 @@ def reports(results_input, results_output):
             else:
                 portions.append(0)
         plt.plot(range(age_max)[::-1], portions, **kwargs)
-        # plt.scatter(range(age_max), portions, total_projects_history, marker='o', linewidth='1', zorder=zorder)
+        plt.scatter(range(age_max)[::-1], portions, total_projects_history, marker='o', linewidth=1, zorder=kwargs.get('zorder'))
         ax = plt.gca()
         ax.spines['right'].set_visible(False)
         ax.spines['top'].set_visible(False)
@@ -315,26 +322,25 @@ def reports(results_input, results_output):
         df,
         unit_test_frameworks+ui_automation_frameworks+cloud_test_services,
         label="Any", color=colors_dict['any'], zorder=2,
-        marker=marker_dict['any'],
+        linestyle=linestyle_dict['any'],
     )
     tests_in_projects_by_time_of_creation_cumm(
         df,
         unit_test_frameworks,
         label="Unit testing", color=colors_dict['unit_test_frameworks'], zorder=3,
-        #linestyle=linestyle_dict['unit_test_frameworks']
-        marker=marker_dict['unit_test_frameworks'],
+        linestyle=linestyle_dict['unit_test_frameworks'],
     )
     tests_in_projects_by_time_of_creation_cumm(
         df,
         ui_automation_frameworks,
         label="GUI testing", color=colors_dict['ui_automation_frameworks'], zorder=4,
-        marker=marker_dict['ui_automation_frameworks'],
+        linestyle=linestyle_dict['ui_automation_frameworks'],
     )
     tests_in_projects_by_time_of_creation_cumm(
         df,
         cloud_test_services,
         label="Cloud testing", color=colors_dict['cloud_test_services'], zorder=5,
-        marker=marker_dict['cloud_test_services'],
+        linestyle=linestyle_dict['cloud_test_services'],
     )
     ax.set_xlabel("Years since first commit")
     figure.tight_layout()
@@ -366,7 +372,7 @@ def reports(results_input, results_output):
                 print("{} out of {} projects ({:.1%}).".format(n_projects_with_tests, total_projects, portion))
 
         plt.plot(range(age_max), portions, label=label, zorder=zorder, **kwargs)
-        # plt.scatter(range(age_max), portions, total_projects_history, marker='o', linewidth='1', zorder=zorder)
+        plt.scatter(range(age_max), portions, total_projects_history, marker='o', linewidth='1', zorder=zorder)
         ax = plt.gca()
         ax.spines['right'].set_visible(False)
         ax.spines['top'].set_visible(False)
@@ -383,10 +389,10 @@ def reports(results_input, results_output):
             plt.title(title)
 
     figure, ax = plt.subplots(1,1)
-    tests_in_projects_by_time_of_update(df_old, unit_test_frameworks+ui_automation_frameworks+cloud_test_services, label="Any", color=colors_dict['any'], marker=marker_dict['any'], zorder=1)
-    tests_in_projects_by_time_of_update(df_old, unit_test_frameworks, label="Unit testing", color=colors_dict['unit_test_frameworks'], marker=marker_dict['unit_test_frameworks'], zorder=2)
-    tests_in_projects_by_time_of_update(df_old, ui_automation_frameworks, label="GUI testing", color=colors_dict['ui_automation_frameworks'], marker=marker_dict['ui_automation_frameworks'], zorder=3)
-    tests_in_projects_by_time_of_update(df_old, cloud_test_services, label="Cloud testing", color=colors_dict['cloud_test_services'], marker=marker_dict['cloud_test_services'], zorder=4)
+    tests_in_projects_by_time_of_update(df_old, unit_test_frameworks+ui_automation_frameworks+cloud_test_services, label="Any", color=colors_dict['any'], linestyle=linestyle_dict['any'], zorder=1)
+    tests_in_projects_by_time_of_update(df_old, unit_test_frameworks, label="Unit testing", color=colors_dict['unit_test_frameworks'], linestyle=linestyle_dict['unit_test_frameworks'], zorder=2)
+    tests_in_projects_by_time_of_update(df_old, ui_automation_frameworks, label="GUI testing", color=colors_dict['ui_automation_frameworks'], linestyle=linestyle_dict['ui_automation_frameworks'], zorder=3)
+    tests_in_projects_by_time_of_update(df_old, cloud_test_services, label="Cloud testing", color=colors_dict['cloud_test_services'], linestyle=linestyle_dict['cloud_test_services'], zorder=4)
     ax.set_xlabel("Years since last update")
     figure.tight_layout()
     figure.savefig(path_join(results_output, "mature_tests_by_update.pdf"))
