@@ -635,7 +635,7 @@ def reports(results_input, results_output):
         "travis": "Travis CI",
     }
     df[['ci/cd']+ci_services].sum().plot.bar(
-        fontsize=15, edgecolor = 'k', color='C4', linewidth = [1]+[0]*len(ci_services)
+        fontsize=15, edgecolor = 'k', color='black', width=0.25, linewidth = [1]+[0]*len(ci_services)
     )
     ax.spines['right'].set_visible(False)
     ax.spines['top'].set_visible(False)
@@ -680,7 +680,10 @@ def reports(results_input, results_output):
     mosaic(df, ["tests", "ci/cd"], properties= properties, labelizer=labelizer, ax=ax)
     ax.set_xticklabels(['No tests', 'With tests'])
     ax.set_yticklabels(['With CI/CD', 'No CI/CD'])
-    
+    # ax.spines['left'].linewidth = 1
+    # ax.spines['top'].linewidth = 1
+    # ax.spines['right'].linewidth = 1
+    # ax.spines['bottom'].linewidth = 1
     ax.invert_yaxis()
     figure.tight_layout()
     figure.savefig(path_join(results_output, "ci_cd_mosaic.pdf"))
