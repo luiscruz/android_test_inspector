@@ -110,6 +110,7 @@ def reports(results_input, results_output):
 
     #Feature engineering
     df['tests'] = df[unit_test_frameworks+ui_automation_frameworks+cloud_test_services].any(axis=1)
+    df['no_tests'] = ~df['tests']
     df['unit_tests'] = df[unit_test_frameworks].apply(any, axis=1)
     df['ui_tests'] = df[ui_automation_frameworks].apply(any, axis=1)
     df["cloud_tests"] = df[cloud_test_services].apply(any, axis=1)
@@ -292,6 +293,8 @@ def reports(results_input, results_output):
     ax.set_xlabel("Years since first commit")
     figure.tight_layout()
     figure.savefig(path_join(results_output, "tests_by_age.pdf"))
+    ax.invert_xaxis()
+    figure.savefig(path_join(results_output, "tests_by_age_i.pdf"))
     # ------------------------------------------------------------ #
 
     # --- Percentage of Android tests over the age of the apps (cumulated) --- #
@@ -321,12 +324,13 @@ def reports(results_input, results_output):
             else:
                 portions.append(0)
         plt.plot(range(age_max)[::-1], portions, **kwargs)
-        plt.scatter(range(age_max)[::-1], portions, total_projects_history, marker='o', linewidth=1, zorder=kwargs.get('zorder'))
+        # plt.scatter(range(age_max)[::-1], portions, total_projects_history, marker='o', linewidth=1, zorder=kwargs.get('zorder'))
+        plt.scatter(range(age_max)[::-1], portions, marker='.', linewidth=1, zorder=kwargs.get('zorder'))
         ax = plt.gca()
         ax.spines['right'].set_visible(False)
         ax.spines['top'].set_visible(False)
         ax.spines['left'].set_visible(False)
-        ax.set_xticks(range(age_max)[::-1])
+        ax.set_xticks(range(age_max))
         ax.set_yticklabels(["{:.0%}".format(label) for label in ax.get_yticks()])
         ax.set_ylabel("Percentage of projects")
         ax.yaxis.grid(linestyle='dotted', color='gray')
@@ -359,9 +363,11 @@ def reports(results_input, results_output):
         label="Cloud testing", color=colors_dict['cloud_test_services'], zorder=5,
         linestyle=linestyle_dict['cloud_test_services'],
     )
-    ax.set_xlabel("Years since first commit")
+    ax.set_xlabel("Year")
     figure.tight_layout()
     figure.savefig(path_join(results_output, "tests_by_age_cumm.pdf"))
+    ax.invert_xaxis()
+    figure.savefig(path_join(results_output, "tests_by_age_cumm_i.pdf"))
     # ------------------------------------------------------------ #
 
 
@@ -413,6 +419,8 @@ def reports(results_input, results_output):
     ax.set_xlabel("Years since last update")
     figure.tight_layout()
     figure.savefig(path_join(results_output, "mature_tests_by_update.pdf"))
+    ax.invert_xaxis()
+    figure.savefig(path_join(results_output, "mature_tests_by_update_i.pdf"))
 
     # ------------------------------------------------------------------------------- #
 
@@ -936,6 +944,72 @@ def reports(results_input, results_output):
     figure.savefig(path_join(results_output, "categories.pdf"))
     ######################
 
+    # --- Percentage of Android tests over the age of the apps (cumulated) --- #
+    def tests_in_projects_by_time_of_creation_cumm(df_projects, frameworks,
+                                                   title=None, verbose=False, **kwargs):
+        project_with_test_per_age = []
+        total_projects_per_age = []
+        n_projects_with_tests_history = []
+        total_projects_history = []
+        age_max = df_projects['age_numeric'].max()+1
+        for age in range(age_max)[::-1]:
+            n_projects_with_tests = df_projects[df_projects['age_numeric']==age][frameworks].apply(any, axis=1).sum()
+            n_projects_with_tests_history.append(n_projects_with_tests)
+            total_projects = len(df_projects[df_projects['age_numeric']==age].index)
+            total_projects_history.append(total_projects)
+            project_with_test_per_age.append(n_projects_with_tests)
+            total_projects_per_age.append(total_projects)
+            if verbose:
+                print("Age {}:".format(age))
+                print("{} out of {} projects ({:.1%}).".format(n_projects_with_tests, total_projects, portion))
+        project_with_test_per_age_cum = [sum(project_with_test_per_age[:index+1]) for index in range(len(project_with_test_per_age))]
+        total_projects_per_age_cum = [sum(total_projects_per_age[:index+1]) for index in range(len(total_projects_per_age))]
+        portions = []
+        for with_tests, total in zip(project_with_test_per_age_cum, total_projects_per_age_cum):
+            if total > 0:
+                portions.append(with_tests/len(df_projects))
+            else:
+                portions.append(0)
+        plt.plot(range(age_max)[::-1], portions, **kwargs)
+        plt.scatter(
+            range(age_max)[::-1], portions, total_projects_history,
+            marker='o',
+            zorder=kwargs.get('zorder'),
+            color=kwargs.get('color')
+        )
+        ax = plt.gca()
+        ax.spines['right'].set_visible(False)
+        ax.spines['top'].set_visible(False)
+        ax.spines['left'].set_visible(False)
+        ax.set_xticks(range(age_max)[::-1])
+        ax.set_yticklabels(["{:.0%}".format(label) for label in ax.get_yticks()])
+        ax.set_ylabel("Percentage of projects")
+        ax.yaxis.grid(linestyle='dotted', color='gray')
+        ax.legend(loc='upper center', shadow=False)
+        if title:
+            ax.set_title(title)
+
+    figure, ax = plt.subplots(1,1)
+    tests_in_projects_by_time_of_creation_cumm(
+        df,
+        unit_test_frameworks+ui_automation_frameworks+cloud_test_services,
+        label="Any", color=colors_dict['any'], zorder=2,
+        linestyle=linestyle_dict['any'],
+    )
+    tests_in_projects_by_time_of_creation_cumm(
+        df,
+        ['no_tests'],
+        label="No tests", color='darkred', zorder=5,
+        linestyle="--",
+    )
+    ax.set_xlabel("Years since first commit")
+    figure.tight_layout()
+    figure.savefig(path_join(results_output, "tests_by_age_cumm_3.pdf"))
+    ax.invert_xaxis()
+    figure.savefig(path_join(results_output, "tests_by_age_cumm_3_i.pdf"))
+    # ------------------------------------------------------------ #
+
+
 def _add_bar_counts(ax):
     for p in ax.patches:
         ax.annotate(
@@ -944,7 +1018,7 @@ def _add_bar_counts(ax):
             ha='center',
             fontsize=10
         )
-    
+
 
 
 def exit_gracefully(start_time):
