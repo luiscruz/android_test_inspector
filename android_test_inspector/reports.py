@@ -156,6 +156,23 @@ def reports(results_input, results_output):
         'ui_automation_frameworks': '--',
         'cloud_test_services': '-.',
     }
+    
+    # --- Number of projects by year --- #
+    figure, ax = plt.subplots(figsize=(4, 2.5))
+    df.groupby('age_numeric')['age_numeric'].count().plot.bar(
+        color='black',
+        width=0.25,
+        ax=ax,
+    )
+    ax.tick_params(direction='out', top='off')
+    ax.set_xlabel("Age")
+    ax.set_ylabel("Number of apps")
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+    ax.yaxis.grid(linestyle='dotted')
+    figure.tight_layout()
+    figure.savefig(path_join(results_output, "app_age_count.pdf"))
 
     # --- Number of projects by framework --- #
     columns = (
@@ -694,7 +711,7 @@ def reports(results_input, results_output):
     ]
     chi,pvalue,dof,_ = chi2_contingency(obs)
     print("Relationship between Ci/CD and Automated testing:")
-    print("Chi={}, dof={}, p={}".format(chi,dof,pvalue))
+    print("Chi={}, dof={}, p={}".format(chi, dof, pvalue))
     # ------------------------------------------------------- #
 
     # ------------------ Sonar vs tests --------------- #
@@ -902,11 +919,11 @@ def reports(results_input, results_output):
     #############
 
     #### Categories ######
-
-    df[['app_id','category']].groupby('category').count().plot.bar()
-    ax = df[['app_id','category']].groupby('category').count().plot.bar()
-    for p in ax.patches:
-        ax.annotate("{:.0f}".format(p.get_height()), (p.get_x() +p.get_width()/2, p.get_height()+4), ha='center', fontsize=10)
+    figure, ax = plt.subplots(figsize=(6.4, 4))
+    (df[['app_id','category']]
+     .groupby('category')
+     .count()
+     .plot.bar(color='black', width=0.25, ax=ax))
     ax.legend().remove()
     ax.spines['right'].set_visible(False)
     ax.spines['top'].set_visible(False)
@@ -915,12 +932,19 @@ def reports(results_input, results_output):
     ax.set_xlabel('Category')
     ax.set_ylabel('Number of Apps')
 
-    figure = plt.gcf()
     figure.tight_layout()
     figure.savefig(path_join(results_output, "categories.pdf"))
     ######################
 
-
+def _add_bar_counts(ax):
+    for p in ax.patches:
+        ax.annotate(
+            f"{p.get_height():.0f}",
+            (p.get_x() + p.get_width()/2, p.get_height() + 4),
+            ha='center',
+            fontsize=10
+        )
+    
 
 
 def exit_gracefully(start_time):
