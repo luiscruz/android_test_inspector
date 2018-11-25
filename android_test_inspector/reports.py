@@ -132,8 +132,8 @@ def reports(results_input, results_output):
     df.to_csv("results_merged.csv")
 
 
-    from android_test_inspector.corr_analysis import correlation_matrix
-    correlation_matrix(df, output_file=path_join(results_output, "corr_matrix.pdf"))
+    # from android_test_inspector.corr_analysis import correlation_matrix
+    # correlation_matrix(df, output_file=path_join(results_output, "corr_matrix.pdf"))
 
     colors_dict = {
         'any': 'C0',
@@ -290,7 +290,9 @@ def reports(results_input, results_output):
     tests_in_projects_by_time_of_creation(df, unit_test_frameworks, label="Unit testing", color=colors_dict['unit_test_frameworks'], zorder=3, linestyle=linestyle_dict['unit_test_frameworks'])
     tests_in_projects_by_time_of_creation(df, ui_automation_frameworks, label="GUI testing", color=colors_dict['ui_automation_frameworks'], zorder=4, linestyle=linestyle_dict['ui_automation_frameworks'])
     tests_in_projects_by_time_of_creation(df, cloud_test_services, label="Cloud testing", color=colors_dict['cloud_test_services'], zorder=5, linestyle=linestyle_dict['cloud_test_services'])
+    
     ax.set_xlabel("Years since first commit")
+    ax.axvspan(0,2, color='darkgreen', alpha=0.1)
     figure.tight_layout()
     figure.savefig(path_join(results_output, "tests_by_age.pdf"))
     ax.invert_xaxis()
@@ -1003,6 +1005,7 @@ def reports(results_input, results_output):
         linestyle="--",
     )
     ax.set_xlabel("Years since first commit")
+    ax.axvspan(0,2, color='darkgreen', alpha=0.1)
     figure.tight_layout()
     figure.savefig(path_join(results_output, "tests_by_age_cumm_3.pdf"))
     ax.invert_xaxis()
