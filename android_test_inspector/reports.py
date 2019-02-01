@@ -366,6 +366,7 @@ def reports(results_input, results_output):
         linestyle=linestyle_dict['cloud_test_services'],
     )
     ax.set_xlabel("Year")
+    ax.axvspan(0,2, color='darkgreen', alpha=0.1)
     figure.tight_layout()
     figure.savefig(path_join(results_output, "tests_by_age_cumm.pdf"))
     ax.invert_xaxis()
@@ -518,6 +519,21 @@ def reports(results_input, results_output):
             floatfmt=".1f"
         ))
     T.LATEX_ESCAPE_RULES = old_escape_rules
+    ###box plots instead
+    figure, axes = plt.subplots(2, 3)
+    for index, ax, metric in zip(range(len(metrics)), [ax for subaxes in axes for ax in subaxes], metrics):
+        values = remove_outliers(df[metric])
+        metric_title = metric.title().replace("_", " ")
+        ax.boxplot(values, whis="range", showmeans=True, meanline=True)
+        ax.set_xticklabels([metric_title])
+        ax.spines['right'].set_visible(False)
+        ax.spines['top'].set_visible(False)
+        ax.spines['left'].set_visible(False)
+        ax.spines['bottom'].set_visible(True)
+        ax.yaxis.grid(linestyle='dotted', color='gray')
+        figure.tight_layout()
+    figure.savefig(path_join(results_output, f"popularity_metrics_boxplot.pdf"))
+    
     # -------------------------------------------------- #
 
     # --- Histogram for downloads --- #
