@@ -5,6 +5,8 @@ from math import log, floor
 
 import click
 import matplotlib
+import matplotlib.ticker as ticker
+
 matplotlib.rcParams['font.family'] = 'serif'
 matplotlib.rcParams['mathtext.fontset'] = 'cm'
 
@@ -142,7 +144,7 @@ def reports(results_input, results_output):
         'cloud_test_services': 'C3',
         'ci_services': 'C4',
     }
-    
+
     marker_dict = {
         'any': 'o',
         'unit_test_frameworks': 'v',
@@ -150,14 +152,14 @@ def reports(results_input, results_output):
         'cloud_test_services': 'H',
         'ci_services': 's',
     }
-    
+
     linestyle_dict = {
         'any': '-',
         'unit_test_frameworks': ':',
         'ui_automation_frameworks': '--',
         'cloud_test_services': '-.',
     }
-    
+
     # --- Number of projects by year --- #
     figure, ax = plt.subplots(figsize=(4, 2.5))
     df.groupby('age_numeric')['age_numeric'].count().plot.bar(
@@ -269,7 +271,7 @@ def reports(results_input, results_output):
             if verbose:
                 print("Age {}:".format(age))
                 print("{} out of {} projects ({:.1%}).".format(n_projects_with_tests, total_projects, portion))
-        
+
         plt.plot(range(age_max), portions, label=label, zorder=zorder, **kwargs)
         plt.scatter(range(age_max), portions, total_projects_history, marker='o', linewidth='1', zorder=zorder)
         ax = plt.gca()
@@ -290,7 +292,7 @@ def reports(results_input, results_output):
     tests_in_projects_by_time_of_creation(df, unit_test_frameworks, label="Unit testing", color=colors_dict['unit_test_frameworks'], zorder=3, linestyle=linestyle_dict['unit_test_frameworks'])
     tests_in_projects_by_time_of_creation(df, ui_automation_frameworks, label="GUI testing", color=colors_dict['ui_automation_frameworks'], zorder=4, linestyle=linestyle_dict['ui_automation_frameworks'])
     tests_in_projects_by_time_of_creation(df, cloud_test_services, label="Cloud testing", color=colors_dict['cloud_test_services'], zorder=5, linestyle=linestyle_dict['cloud_test_services'])
-    
+
     ax.set_xlabel("Years since first commit")
     ax.axvspan(0,2, color='darkgreen', alpha=0.1)
     figure.tight_layout()
@@ -524,16 +526,19 @@ def reports(results_input, results_output):
     for index, ax, metric in zip(range(len(metrics)), [ax for subaxes in axes for ax in subaxes], metrics):
         values = remove_outliers(df[metric])
         metric_title = metric.title().replace("_", " ")
-        ax.boxplot(values, whis="range", showmeans=True, meanline=True)
+        ax.boxplot(values, whis=[5,95], showmeans=True, meanline=True,showfliers=True)
         ax.set_xticklabels([metric_title])
         ax.spines['right'].set_visible(False)
         ax.spines['top'].set_visible(False)
         ax.spines['left'].set_visible(False)
         ax.spines['bottom'].set_visible(True)
         ax.yaxis.grid(linestyle='dotted', color='gray')
+        if index != 4:
+            ax.set_yscale('log')
+            ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda y, _: '{:g}'.format(y)))
         figure.tight_layout()
     figure.savefig(path_join(results_output, f"popularity_metrics_boxplot.pdf"))
-    
+
     # -------------------------------------------------- #
 
     # --- Histogram for downloads --- #
@@ -701,7 +706,7 @@ def reports(results_input, results_output):
     figure.tight_layout()
     figure.savefig(path_join(results_output, "ci_cd_hist.pdf"))
     # ------------------------------------------------------- #
-    
+
     # ---------------- Mosaic CI/CD ---------------- #
     from statsmodels.graphics.mosaicplot import mosaic
     def properties(keys):
@@ -730,7 +735,7 @@ def reports(results_input, results_output):
     ax.invert_yaxis()
     figure.tight_layout()
     figure.savefig(path_join(results_output, "ci_cd_mosaic.pdf"))
-    
+
     obs = [
         [sum(~df["tests"] & df["ci/cd"]), sum(~df["tests"] & ~df["ci/cd"])], #No tests
         [sum(df["tests"] & df["ci/cd"]), sum(df["tests"] & ~df["ci/cd"])] #Tests
